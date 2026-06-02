@@ -1,0 +1,70 @@
+{
+  "app": {
+    "name": "Glyph",
+    "tagline": "又快、又轻、又美,任何 agent 都能插进来的编辑器"
+  },
+  "menu": {
+    "file": "文件",
+    "edit": "编辑",
+    "view": "视图",
+    "theme": "主题",
+    "help": "帮助"
+  },
+  "edit": {
+    "undo": "撤销",
+    "redo": "重做",
+    "find": "查找/替换"
+  },
+  "view": {
+    "showSidebar": "显示侧栏",
+    "hideSidebar": "隐藏侧栏"
+  },
+  "help": {
+    "about": "关于 Glyph"
+  },
+  "command": {
+    "title": "命令面板",
+    "placeholder": "输入命令…",
+    "empty": "无匹配命令"
+  },
+  "quickOpen": {
+    "title": "快速打开",
+    "placeholder": "输入文件名搜索,或 : 跳到行号",
+    "empty": "无匹配文件",
+    "goToLine": "前往第 {{line}} 行",
+    "lineHint": "输入要跳转的行号"
+  },
+  "workbench": {
+    "emptyTitle": "开始编辑",
+    "emptyHint": "打开一个文件(Ctrl/Cmd+O),或按命令面板开始",
+    "statusReady": "就绪"
+  },
+  "file": {
+    "open": "打开",
+    "openFolder": "打开文件夹",
+    "recent": "最近打开",
+    "recentEmpty": "无最近文件",
+    "clearRecent": "清除最近记录",
+    "closeFolder": "关闭文件夹",
+    "save": "保存",
+    "saveAs": "另存为",
+    "saved": "已保存",
+    "openFailed": "打开失败: {{msg}}",
+    "saveFailed": "保存失败: {{msg}}"
+  },
+  "explorer": {
+    "readFailed": "读取目录失败: {{msg}}"
+  },
+  "settings": {
+    "title": "设置",
+    "theme": "主题",
+    "fontSize": "字号",
+    "tabSize": "Tab 宽度",
+    "insertSpaces": "用空格缩进",
+    "wordWrap": "自动换行",
+    "lineNumbers": "显示行号",
+    "ligatures": "连字",
+    "reset": "恢复默认",
+    "close": "关闭"
+  }
+}

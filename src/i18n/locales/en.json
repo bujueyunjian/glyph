@@ -1,0 +1,70 @@
+{
+  "app": {
+    "name": "Glyph",
+    "tagline": "The fast, light, beautiful editor any agent can plug into"
+  },
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "theme": "Theme",
+    "help": "Help"
+  },
+  "edit": {
+    "undo": "Undo",
+    "redo": "Redo",
+    "find": "Find / Replace"
+  },
+  "view": {
+    "showSidebar": "Show Sidebar",
+    "hideSidebar": "Hide Sidebar"
+  },
+  "help": {
+    "about": "About Glyph"
+  },
+  "command": {
+    "title": "Command Palette",
+    "placeholder": "Type a command…",
+    "empty": "No matching command"
+  },
+  "quickOpen": {
+    "title": "Quick Open",
+    "placeholder": "Search files, or : to go to a line",
+    "empty": "No matching file",
+    "goToLine": "Go to line {{line}}",
+    "lineHint": "Enter a line number"
+  },
+  "workbench": {
+    "emptyTitle": "Start editing",
+    "emptyHint": "Open a file (Ctrl/Cmd+O), or press the command palette to begin",
+    "statusReady": "Ready"
+  },
+  "file": {
+    "open": "Open",
+    "openFolder": "Open Folder",
+    "recent": "Open Recent",
+    "recentEmpty": "No recent files",
+    "clearRecent": "Clear Recent",
+    "closeFolder": "Close Folder",
+    "save": "Save",
+    "saveAs": "Save As",
+    "saved": "Saved",
+    "openFailed": "Failed to open: {{msg}}",
+    "saveFailed": "Failed to save: {{msg}}"
+  },
+  "explorer": {
+    "readFailed": "Failed to read directory: {{msg}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "fontSize": "Font size",
+    "tabSize": "Tab size",
+    "insertSpaces": "Insert spaces",
+    "wordWrap": "Word wrap",
+    "lineNumbers": "Line numbers",
+    "ligatures": "Ligatures",
+    "reset": "Reset to defaults",
+    "close": "Close"
+  }
+}

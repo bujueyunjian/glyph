@@ -1,0 +1,27 @@
+# 依赖
+node_modules
+.pnpm-store
+
+# 前端构建产物
+dist
+dist-ssr
+*.local
+
+# 编辑器/系统
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 日志
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Rust / Tauri
+src-tauri/target

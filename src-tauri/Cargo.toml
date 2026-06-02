@@ -1,0 +1,27 @@
+[package]
+name = "glyph"
+version = "0.0.1"
+description = "The fast, light, beautiful code editor any AI agent can plug into."
+authors = []
+edition = "2021"
+
+[lib]
+name = "glyph_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# 体积优化:贴合"比 VS Code 轻一个数量级"的 footprint SLO
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = "s"
+strip = "symbols"

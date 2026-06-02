@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* 设计 token(见 docs/design/design-system.md C 节)。
+   暗色优先、近单色 chrome、单一强调色;代码是唯一高对比元素。 */
+@theme {
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "JetBrains Mono", monospace;
+
+  /* 默认 = glyph-dark(柔和深色);运行时由 theme/themes.ts 覆盖,
+     这里的值仅作首屏初值,避免切换前闪烁。 */
+  --color-bg: #1a1b1e;
+  --color-surface: #212327;
+  --color-overlay: #2a2c31;
+  --color-border: #383b41;
+  --color-text: #e6e7e9;
+  --color-muted: #a6a9b0;
+  --color-subtle: #7e828b;
+  --color-accent: #6aa8ff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  /* 文本渲染清晰度:贴合"开箱即美"的排版基线 */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 命令面板(cmdk):用主题 token 定制,跟随明暗;无装饰动画,克制。 */
+[cmdk-overlay] {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.45);
+  z-index: 50;
+}
+[cmdk-dialog] {
+  position: fixed;
+  top: 16%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 560px;
+  max-width: 92vw;
+  z-index: 51;
+}
+[cmdk-root] {
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.4);
+}
+[cmdk-input] {
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+}
+[cmdk-list] {
+  max-height: 340px;
+  overflow: auto;
+  padding: 6px;
+}
+[cmdk-group-heading] {
+  padding: 8px 10px 4px;
+  color: var(--color-subtle);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+[cmdk-item] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  cursor: default;
+}
+[cmdk-item][data-selected="true"] {
+  background: var(--color-overlay);
+}
+[cmdk-empty] {
+  padding: 16px;
+  color: var(--color-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* 动效只为定位,且尊重 reduced-motion(设计准则 #7) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
