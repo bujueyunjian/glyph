@@ -1,0 +1,27 @@
+docs/progress/tasks/0034-line-edit-commands-palette.md
+  s_82120e9b499222::t_2c9cf2a17718a9 1-20
+src/i18n/locales/en.json
+  s_82120e9b499222::t_03a1ab6d43eeca 35-40
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_22671d2ec9129b 35-40
+src/App.tsx
+  s_82120e9b499222::t_c3f24dc479f7e2 519-553
+  s_82120e9b499222::t_4f5c9c851b1e98 704
+  s_82120e9b499222::t_c7bfc73234731a 255-281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9fb9bcd2d66700e3cfbc3f43f22162f0678661ac",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
