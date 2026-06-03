@@ -1,0 +1,37 @@
+src/components/editor/CodeEditor.tsx
+  s_82120e9b499222::t_ffe4c23eb0f259 89-91
+  s_82120e9b499222::t_5bf374923a338f 12
+  s_82120e9b499222::t_543286a229010a 79,88,93
+src/components/editor/markdownDecorations.ts
+  s_82120e9b499222::t_ffe4c23eb0f259 146
+  s_82120e9b499222::t_56f823fa7c5f5a 84-145,147-156
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_c0afbb6eb8d69a 138
+src/i18n/locales/en.json
+  s_82120e9b499222::t_cd2af5f5f56764 138
+src/components/editor/markdownDecorations.test.ts
+  s_82120e9b499222::t_f8024ba071865b 6-9
+  s_82120e9b499222::t_3792eea87d1b71 55-98
+src/components/settings/SettingsPanel.tsx
+  s_82120e9b499222::t_73aeb9ee63af18 158-168
+docs/progress/tasks/0036-markdown-live-preview-conceal.md
+  s_82120e9b499222::t_f2969b9be1fa41 1-27
+src/types/settingsTypes.ts
+  s_82120e9b499222::t_2aba4ab7ae01e4 9,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8f18683e4fc31d0d6e39016a6eed6e8c2f106f78",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
