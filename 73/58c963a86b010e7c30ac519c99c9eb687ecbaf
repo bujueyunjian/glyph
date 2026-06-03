@@ -1,0 +1,70 @@
+docs/progress/tasks/0022-file-tree-crud-watch.md
+  s_82120e9b499222::t_b32d4557816cfc 1-50
+pnpm-lock.yaml
+  ai_agent 86-88,783-795,3140-3152
+src/utils/path.test.ts
+  s_82120e9b499222::t_0bc8272c837e61 3-8
+  s_82120e9b499222::t_5c4ed57fbbc030 39-56
+src/api/fileApi.ts
+  s_82120e9b499222::t_1e64fdff9803a0 13-29
+package.json
+  s_82120e9b499222::t_9af42dbeff7011 53
+src/utils/path.ts
+  s_82120e9b499222::t_5754a3f6056430 16-26
+src/components/explorer/FileTreeNode.tsx
+  s_82120e9b499222::t_380910a5b87fdc 3,10-16,22,25-28,34,60-123,132
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_59c4d46f151f73 87-94
+src-tauri/src/watch.rs
+  s_82120e9b499222::t_e836a4841f8f48 1-36
+src-tauri/Cargo.toml
+  s_82120e9b499222::t_e00e8752e23a57 23-24
+src/App.tsx
+  s_82120e9b499222::t_966b3f7fe73977 16,232-234
+  s_82120e9b499222::t_46032189cf55f8 183-231,235-241
+  s_82120e9b499222::t_824eb9d2b6ce4e 461-487
+  s_82120e9b499222::t_e6bcb549ec9867 522,526
+  s_82120e9b499222::t_2e3c45ed4f1146 17
+  s_82120e9b499222::t_56919f92d25982 12
+  s_82120e9b499222::t_391a768145e62b 50
+  s_82120e9b499222::t_28ebbde8e4b039 22
+  s_82120e9b499222::t_a2d7bb706897ab 98
+src/components/explorer/FileTree.tsx
+  s_82120e9b499222::t_392e0615475ee8 54
+  s_82120e9b499222::t_0ae81d0e6d220a 8,14
+  s_82120e9b499222::t_903eb47e2b368d 18-23
+src/api/workspaceApi.ts
+  s_82120e9b499222::t_7fd3017f31abec 14-22
+src-tauri/Cargo.lock
+  ai_agent 988-996,1067-1075,1408,1814-1833,1977-1996,2130-2141,2204-2222,3915,4762-4770,4813-4827,4885-4890,4909-4914,4933-4938,4969-4974,4993-4998,5017-5022,5041-5045
+src-tauri/src/commands/file.rs
+  s_82120e9b499222::t_6be8a198851127 138-209
+src/i18n/locales/en.json
+  s_82120e9b499222::t_4d5a42ed769548 87-94
+src/components/common/PromptDialog.tsx
+  s_82120e9b499222::t_1034c070a93e92 9
+  s_82120e9b499222::t_703f2c916186dc 33-37
+src-tauri/src/lib.rs
+  s_82120e9b499222::t_88dbd056b5eccb 34-36
+  s_82120e9b499222::t_7e7a030c5a9bf6 11
+  s_82120e9b499222::t_354d50e8e5e2ef 27-30
+  s_82120e9b499222::t_246086d15bcbd4 6-8
+  s_82120e9b499222::t_c256d0d48d9467 3
+  s_82120e9b499222::t_97a0605d9ba0d0 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7358c963a86b010e7c30ac519c99c9eb687ecbaf",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
