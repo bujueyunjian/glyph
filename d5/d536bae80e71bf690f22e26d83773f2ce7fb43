@@ -1,0 +1,38 @@
+docs/progress/tasks/0016-perf-ci-gate.md
+  s_82120e9b499222::t_fedfa62bd61f05 1-2,6-59,61,66-67,71,75-76
+  s_82120e9b499222::t_3f317336e36532 3-5
+  s_82120e9b499222::t_f364ae0a6c9da2 60,62-65,68-70,72-74,77-78
+docs/progress/tasks/0017-markdown-live-preview.md
+  s_82120e9b499222::t_a318572d8b52d4 1-75
+docs/progress/tasks/0018-agent-host-proc-spike.md
+  s_82120e9b499222::t_0f153ddf3882c2 1-76
+docs/adr/0006-internal-extension-points.md
+  s_82120e9b499222::t_8f970f4627f88d 1-46
+docs/progress/PROGRESS.md
+  s_82120e9b499222::t_61d3aab6b756b1 6-7
+  s_82120e9b499222::t_691aa4d35c1be9 44-55
+docs/progress/tasks/0015-experience-hardening.md
+  s_82120e9b499222::t_a3009a5bc8e67b 74-75,87
+  s_82120e9b499222::t_30892a381fff05 88-90
+  s_82120e9b499222::t_a6a9ac5b95eff3 3
+  s_82120e9b499222::t_2a61020aaca13f 73,76-84,92-93,95
+  s_82120e9b499222::t_3befc8ed68da3a 1-2,6-72,85-86,91,96
+  s_82120e9b499222::t_5f9e82a2101a76 4-5
+  s_82120e9b499222::t_23e2da4659f6d6 94,97-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d5d536bae80e71bf690f22e26d83773f2ce7fb43",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
