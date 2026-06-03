@@ -7,6 +7,14 @@ import { StreamLanguage } from "@codemirror/language";
 // 官方 @codemirror/lang-* 走 Lezer;长尾走 @codemirror/legacy-modes 的 StreamLanguage。
 // tree-sitter WASM 高亮留 M2。新增语言在此登记一行即可。
 
+// Markdown:启用 GFM(删除线/表格/任务列表)+ 行内"所见即美"样式装饰。
+// 样式装饰随 md chunk 懒加载,不进首屏(守"轻"红线)。
+async function loadMarkdown(): Promise<Extension[]> {
+  const lang = await import("@codemirror/lang-markdown");
+  const { markdownInlineStyle } = await import("./markdownDecorations");
+  return [lang.markdown({ base: lang.markdownLanguage }), markdownInlineStyle];
+}
+
 // 官方 Lezer 语言:扩展名 → 加载器
 const LEZER_LOADERS: Record<string, () => Promise<Extension[]>> = {
   js: async () => [(await import("@codemirror/lang-javascript")).javascript()],
@@ -29,10 +37,8 @@ const LEZER_LOADERS: Record<string, () => Promise<Extension[]>> = {
   json: async () => [(await import("@codemirror/lang-json")).json()],
   jsonc: async () => [(await import("@codemirror/lang-json")).json()],
   rs: async () => [(await import("@codemirror/lang-rust")).rust()],
-  md: async () => [(await import("@codemirror/lang-markdown")).markdown()],
-  markdown: async () => [
-    (await import("@codemirror/lang-markdown")).markdown(),
-  ],
+  md: async () => loadMarkdown(),
+  markdown: async () => loadMarkdown(),
   css: async () => [(await import("@codemirror/lang-css")).css()],
   html: async () => [(await import("@codemirror/lang-html")).html()],
   htm: async () => [(await import("@codemirror/lang-html")).html()],

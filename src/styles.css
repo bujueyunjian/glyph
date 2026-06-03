@@ -186,6 +186,48 @@ body {
   max-width: 100%;
 }
 
+/* 行内 Markdown "所见即美":编辑器内对 md 语法着重渲染(mark 装饰,不改文本)。
+   克制取向——标记仍可见可编,只让结构更醒目,守"开箱即美"而不喧宾夺主。 */
+.cm-md-h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+}
+.cm-md-h2 {
+  font-size: 1.3em;
+  font-weight: 700;
+}
+.cm-md-h3 {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+.cm-md-h {
+  font-weight: 600;
+}
+.cm-md-strong {
+  font-weight: 700;
+}
+.cm-md-em {
+  font-style: italic;
+}
+.cm-md-strike {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.cm-md-code {
+  font-family: var(--font-mono);
+  background: var(--color-overlay);
+  border-radius: 3px;
+  padding: 0 0.2em;
+}
+.cm-md-link {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+.cm-md-quote {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
 /* 动效只为定位,且尊重 reduced-motion(设计准则 #7) */
 @media (prefers-reduced-motion: reduce) {
   *,
