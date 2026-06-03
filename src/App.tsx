@@ -73,9 +73,18 @@ function App() {
   const editorRefs = useRef<Map<string, ReactCodeMirrorRef | null>>(new Map());
   const splitRefs = useRef<Map<string, ReactCodeMirrorRef | null>>(new Map());
   const focusedPaneRef = useRef<"main" | "split">("main");
+  // 读某文件最新内容:优先聚焦面板的实例,缺失则回退另一面板。
+  // 兜底回退避免「聚焦分屏时读主面板独占的标签」误得空串 → 防覆盖丢数据。
   const getContent = useCallback((path: string) => {
-    const refs = focusedPaneRef.current === "split" ? splitRefs : editorRefs;
-    return refs.current.get(path)?.view?.state.doc.toString() ?? "";
+    const order =
+      focusedPaneRef.current === "split"
+        ? [splitRefs, editorRefs]
+        : [editorRefs, splitRefs];
+    for (const refs of order) {
+      const view = refs.current.get(path)?.view;
+      if (view) return view.state.doc.toString();
+    }
+    return "";
   }, []);
 
   const { recent, addRecent, clearRecent } = useRecentFiles();
@@ -89,6 +98,7 @@ function App() {
     closeTab,
     save,
     saveAs,
+    saveAll,
     markDirty,
     reorderTabs,
   } = useEditorTabs(getContent, addRecent);
@@ -393,6 +403,13 @@ function App() {
         perform: doSaveAs,
       },
       {
+        id: "file.saveAll",
+        title: t("file.saveAll"),
+        group: t("menu.file"),
+        shortcut: "Ctrl/⌘ ⌥ S",
+        perform: () => void saveAll(),
+      },
+      {
         id: "view.settings",
         title: t("settings.title"),
         group: t("menu.view"),
@@ -526,6 +543,7 @@ function App() {
       openFolder,
       doSave,
       doSaveAs,
+      saveAll,
       themes,
       setTheme,
       transformLines,
@@ -572,7 +590,8 @@ function App() {
         void open();
       } else if (key === "s") {
         event.preventDefault();
-        if (event.shiftKey) doSaveAs();
+        if (event.altKey) void saveAll();
+        else if (event.shiftKey) doSaveAs();
         else doSave();
       } else if (key === "w") {
         if (effectiveActive) {
@@ -601,6 +620,7 @@ function App() {
     open,
     doSave,
     doSaveAs,
+    saveAll,
     closeTabSynced,
     activePath,
     effectiveActive,

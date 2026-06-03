@@ -191,6 +191,25 @@ export function useEditorTabs(
     [getContent, writeTabs, activate, t],
   );
 
+  // 保存全部脏标签:并发写盘后一次性清脏,只弹一条汇总 toast(不逐文件刷屏)。
+  const saveAll = useCallback(async () => {
+    const dirty = tabsRef.current.filter((tab) => tab.isDirty);
+    if (dirty.length === 0) return;
+    try {
+      await Promise.all(
+        dirty.map((tab) => saveFile(tab.path, getContent(tab.path))),
+      );
+      writeTabs(
+        tabsRef.current.map((tab) =>
+          tab.isDirty ? { ...tab, isDirty: false } : tab,
+        ),
+      );
+      toast.success(t("file.savedAll", { count: dirty.length }));
+    } catch (err) {
+      toast.error(t("file.saveFailed", { msg: (err as Error).message }));
+    }
+  }, [getContent, writeTabs, t]);
+
   return {
     tabs,
     activePath,
@@ -200,6 +219,7 @@ export function useEditorTabs(
     closeTab,
     save,
     saveAs,
+    saveAll,
     markDirty,
     reorderTabs,
   };
