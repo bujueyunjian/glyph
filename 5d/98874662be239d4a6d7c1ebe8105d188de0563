@@ -1,0 +1,33 @@
+src/App.tsx
+  s_82120e9b499222::t_cd1f4f0357e515 31-37
+  s_82120e9b499222::t_f44e157af5c400 121-142
+  s_82120e9b499222::t_97ca7316343da5 180-209
+  s_82120e9b499222::t_75c1d5ffc066f2 217
+src/i18n/locales/en.json
+  s_82120e9b499222::t_64d1fc6e813d13 10-17
+src/features/textops/lineOps.ts
+  s_82120e9b499222::t_86686435d6990e 1-63
+docs/progress/tasks/0020-text-power-line-ops.md
+  s_82120e9b499222::t_67bf3bbf73cfde 1-45,47-48,53-54,64-65
+  s_82120e9b499222::t_2c23ede146725a 46,49-52,55-63,66
+src/features/textops/lineOps.test.ts
+  s_82120e9b499222::t_13aefb58af04bf 1-51
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_b6a747e26c1187 10-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5d98874662be239d4a6d7c1ebe8105d188de0563",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
