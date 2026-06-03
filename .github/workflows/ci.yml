@@ -1,0 +1,64 @@
+name: CI
+
+# 全量门禁:前端(typecheck/lint/format/test)+ Rust(fmt/clippy/test)+ 构建。
+# 对齐 package.json 的 `pnpm check`(CI 跑这一行 + build)。
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Tauri v2 在 Linux 需 WebKitGTK 等系统依赖(clippy/build 会编译 tauri)。
+      - name: Install Tauri system deps (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            build-essential \
+            libgtk-3-dev \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      # typecheck + lint + format:check + test + rs:fmt + rs:clippy + rs:test
+      - name: Gate (pnpm check)
+        run: pnpm check
+
+      - name: Build frontend
+        run: pnpm build

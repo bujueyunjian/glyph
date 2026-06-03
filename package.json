@@ -21,7 +21,7 @@
     "rs:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "rs:clippy": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets",
     "rs:test": "cargo test --manifest-path src-tauri/Cargo.toml",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm rs:fmt && pnpm rs:clippy"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm rs:fmt && pnpm rs:clippy && pnpm rs:test"
   },
   "dependencies": {
     "@codemirror/commands": "^6.7.1",
