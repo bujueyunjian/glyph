@@ -67,6 +67,18 @@
   "preview": {
     "title": "Markdown 预览"
   },
+  "mdfmt": {
+    "group": "Markdown 格式",
+    "bold": "粗体",
+    "italic": "斜体",
+    "code": "行内代码",
+    "strike": "删除线",
+    "h1": "标题 1",
+    "h2": "标题 2",
+    "quote": "引用",
+    "bullet": "无序列表",
+    "ordered": "有序列表"
+  },
   "agent": {
     "group": "AI",
     "ask": "向 Agent 提问(实验)",

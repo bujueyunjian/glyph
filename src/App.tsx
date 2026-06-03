@@ -49,6 +49,11 @@ import {
   trimLineEnds,
   wrapLines,
 } from "@/features/textops/lineOps";
+import {
+  toggleLinePrefix,
+  toggleOrderedList,
+  toggleWrap,
+} from "@/features/markdown/mdFormat";
 import { getDirName, getFileExtension, joinPath } from "@/utils/path";
 
 // 编辑器(含 CodeMirror 核心)懒加载:空态启动时不加载,打开文件才拉取。
@@ -269,6 +274,23 @@ function App() {
     [activeView],
   );
 
+  // Markdown 行内格式化:对每个选区切换环绕标记(粗体/斜体/码/删除线);空选区成对插入。
+  const formatInline = useCallback(
+    (marker: string) => {
+      const view = activeView();
+      if (!view) return;
+      const { state } = view;
+      const changes = state.selection.ranges.map((range) => ({
+        from: range.from,
+        to: range.to,
+        insert: toggleWrap(state.doc.sliceString(range.from, range.to), marker),
+      }));
+      view.dispatch({ changes });
+      view.focus();
+    },
+    [activeView],
+  );
+
   // 跨文件搜索命中跳转:打开文件,轮询等编辑器就绪后跳到行(应对懒加载挂载时序)。
   const openHit = useCallback(
     (path: string, line: number) => {
@@ -307,6 +329,10 @@ function App() {
 
   const activeIsMarkdown =
     !!activePath && ["md", "markdown"].includes(getFileExtension(activePath));
+  // 聚焦文件是否 Markdown:决定格式化命令是否进命令面板(上下文相关,保持面板克制)。
+  const effectiveIsMarkdown =
+    !!effectiveActive &&
+    ["md", "markdown"].includes(getFileExtension(effectiveActive));
 
   // 预览开启或切换文件时,立即用当前文档内容刷新预览。
   useEffect(() => {
@@ -459,6 +485,64 @@ function App() {
             },
           }),
       },
+      ...(effectiveIsMarkdown
+        ? [
+            {
+              id: "mdfmt.bold",
+              title: t("mdfmt.bold"),
+              group: t("mdfmt.group"),
+              perform: () => formatInline("**"),
+            },
+            {
+              id: "mdfmt.italic",
+              title: t("mdfmt.italic"),
+              group: t("mdfmt.group"),
+              perform: () => formatInline("*"),
+            },
+            {
+              id: "mdfmt.code",
+              title: t("mdfmt.code"),
+              group: t("mdfmt.group"),
+              perform: () => formatInline("`"),
+            },
+            {
+              id: "mdfmt.strike",
+              title: t("mdfmt.strike"),
+              group: t("mdfmt.group"),
+              perform: () => formatInline("~~"),
+            },
+            {
+              id: "mdfmt.h1",
+              title: t("mdfmt.h1"),
+              group: t("mdfmt.group"),
+              perform: () => transformLines((s) => toggleLinePrefix(s, "# ")),
+            },
+            {
+              id: "mdfmt.h2",
+              title: t("mdfmt.h2"),
+              group: t("mdfmt.group"),
+              perform: () => transformLines((s) => toggleLinePrefix(s, "## ")),
+            },
+            {
+              id: "mdfmt.quote",
+              title: t("mdfmt.quote"),
+              group: t("mdfmt.group"),
+              perform: () => transformLines((s) => toggleLinePrefix(s, "> ")),
+            },
+            {
+              id: "mdfmt.bullet",
+              title: t("mdfmt.bullet"),
+              group: t("mdfmt.group"),
+              perform: () => transformLines((s) => toggleLinePrefix(s, "- ")),
+            },
+            {
+              id: "mdfmt.ordered",
+              title: t("mdfmt.ordered"),
+              group: t("mdfmt.group"),
+              perform: () => transformLines(toggleOrderedList),
+            },
+          ]
+        : []),
       {
         id: "textops.trimEnd",
         title: t("textops.trimEnd"),
@@ -549,6 +633,8 @@ function App() {
       transformLines,
       toggleSplit,
       askAgent,
+      effectiveIsMarkdown,
+      formatInline,
     ],
   );
 

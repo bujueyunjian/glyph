@@ -67,6 +67,18 @@
   "preview": {
     "title": "Markdown Preview"
   },
+  "mdfmt": {
+    "group": "Markdown Format",
+    "bold": "Bold",
+    "italic": "Italic",
+    "code": "Inline Code",
+    "strike": "Strikethrough",
+    "h1": "Heading 1",
+    "h2": "Heading 2",
+    "quote": "Blockquote",
+    "bullet": "Bulleted List",
+    "ordered": "Numbered List"
+  },
   "agent": {
     "group": "AI",
     "ask": "Ask Agent (experimental)",
