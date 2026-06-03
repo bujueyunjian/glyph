@@ -1,0 +1,30 @@
+src-tauri/src/lsp.rs
+  s_82120e9b499222::t_25ac3e1f8f5187 92-94,101,106,114-117,129
+  s_82120e9b499222::t_eee29369a7e03b 238
+  s_82120e9b499222::t_e899a562ed53d1 162-220
+  s_82120e9b499222::t_1f0aa0e11da8ae 14-18
+  s_82120e9b499222::t_336a1aed413510 124-127
+  s_82120e9b499222::t_a581a30f3e56ae 311
+  s_82120e9b499222::t_35fc086a7c818b 6
+  s_82120e9b499222::t_6ff3f202db6978 287-310,312-320
+docs/progress/PROGRESS.md
+  s_82120e9b499222::t_bf362e2a434143 71
+docs/progress/tasks/0038-lsp-initialize-handshake.md
+  s_82120e9b499222::t_8d08469c48fdda 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f1137cd8b22fd21a1a42cf22810b941ca239732e",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
