@@ -1,0 +1,29 @@
+src/components/editor/markdownDecorations.ts
+  s_82120e9b499222::t_0958cc6814e7d4 1-66,71-83
+  s_82120e9b499222::t_d27595dffe9ad3 67-70
+src/components/editor/languageRegistry.ts
+  s_82120e9b499222::t_ae02dccb2e0ebb 10-17
+  s_82120e9b499222::t_faef9a1f7a5b71 40-41
+src/styles.css
+  s_82120e9b499222::t_9af7bfe7c4a591 189-230
+docs/progress/tasks/0031-inline-markdown-styling.md
+  s_82120e9b499222::t_d6d3abdf7524ce 1-26
+src/components/editor/markdownDecorations.test.ts
+  s_82120e9b499222::t_a38eb50b309b95 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9bbf3bcb91a9d8cbe6192453cbdd75fe579cd726",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
