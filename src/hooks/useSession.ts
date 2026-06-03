@@ -11,6 +11,8 @@ export interface SessionState {
   activePath: string | null;
   /** 每个文件的光标偏移(doc 内字符位置),用于恢复光标并滚动入视。 */
   cursors: Record<string, number>;
+  /** 上次打开的工作区根文件夹(用于启动时重开项目);无则 null。 */
+  rootPath: string | null;
 }
 
 // 最小会话恢复:仅记录打开的文件与激活项(localStorage)。
@@ -30,11 +32,13 @@ export function useSession() {
       openPaths: string[],
       activePath: string | null,
       cursors: Record<string, number>,
+      rootPath: string | null,
     ) => {
       writeJson(STORAGE_KEY, {
         openPaths,
         activePath,
         cursors,
+        rootPath,
       } satisfies SessionState);
     },
     [],

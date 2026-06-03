@@ -790,6 +790,8 @@ function App() {
     restoreStarted.current = true;
     const session = loadSession();
     if (session?.cursors) restoredCursorsRef.current = session.cursors;
+    // 重开上次工作区文件夹(启动连续性);路径已不存在时文件树会响亮报错。
+    if (session?.rootPath) openFolderPath(session.rootPath);
     void (async () => {
       if (session && session.openPaths.length > 0) {
         const { openPaths, activePath: savedActive } = session;
@@ -803,7 +805,7 @@ function App() {
       }
       restoreDone.current = true;
     })();
-  }, [loadSession, openPath]);
+  }, [loadSession, openPath, openFolderPath]);
 
   // 会话持久化:恢复完成后,标签/激活项变更即存(恢复期间不写,避免清空上次会话)。
   // 光标位在切换/开关标签时一并快照(此刻各文件 CodeMirror 实例仍在,可读取)。
@@ -819,8 +821,9 @@ function App() {
       tabs.map((tab) => tab.path),
       activePath,
       cursors,
+      rootPath,
     );
-  }, [tabs, activePath, saveSession]);
+  }, [tabs, activePath, rootPath, saveSession]);
 
   // 文件监听:rootPath 变更则监听工作区,fs://changed 防抖刷新文件树(动态 import 不进首屏)。
   useEffect(() => {
