@@ -89,6 +89,7 @@ function App() {
     save,
     saveAs,
     markDirty,
+    reorderTabs,
   } = useEditorTabs(getContent, addRecent);
   const { themes, activeTheme, setTheme } = useTheme();
   const { rootPath, openFolder, closeFolder } = useWorkspace();
@@ -634,6 +635,7 @@ function App() {
               activePath={activePath}
               onActivate={setActive}
               onClose={closeTab}
+              onReorder={reorderTabs}
             />
           ) : null}
           <div className="flex min-h-0 flex-1">

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -9,18 +10,35 @@ interface TabBarProps {
   activePath: string | null;
   onActivate: (path: string) => void;
   onClose: (path: string) => void;
+  onReorder: (from: number, to: number) => void;
 }
 
-// 标签栏。脏标记显示为小圆点,hover 时变为关闭按钮(克制:不抢视觉)。
-export function TabBar({ tabs, activePath, onActivate, onClose }: TabBarProps) {
+// 标签栏。脏标记显示为小圆点,hover 时变为关闭按钮(克制:不抢视觉)。支持拖拽排序。
+export function TabBar({
+  tabs,
+  activePath,
+  onActivate,
+  onClose,
+  onReorder,
+}: TabBarProps) {
   const { t } = useTranslation();
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   return (
     <div className="flex h-9 shrink-0 items-stretch overflow-x-auto border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const active = tab.path === activePath;
         return (
           <div
             key={tab.path}
+            draggable
+            onDragStart={() => setDragIndex(index)}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => {
+              if (dragIndex !== null && dragIndex !== index) {
+                onReorder(dragIndex, index);
+              }
+              setDragIndex(null);
+            }}
             onClick={() => onActivate(tab.path)}
             className={`group flex cursor-default items-center gap-2 border-r border-[var(--color-border)] px-3 text-sm ${
               active

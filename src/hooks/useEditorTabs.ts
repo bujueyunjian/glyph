@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import { openFile, saveFile } from "@/api/fileApi";
+import { moveItem } from "@/utils/array";
 import { getFileName } from "@/utils/path";
 
 export interface EditorTab {
@@ -88,6 +89,14 @@ export function useEditorTabs(
       activate(path);
     },
     [activate],
+  );
+
+  // 标签拖拽排序:把 from 位置的标签移到 to 位置。
+  const reorderTabs = useCallback(
+    (from: number, to: number) => {
+      writeTabs(moveItem(tabsRef.current, from, to));
+    },
+    [writeTabs],
   );
 
   // 撤销关闭:把内容快照重新插回原位置并激活(脏标签关闭后可一键找回)。
@@ -188,5 +197,6 @@ export function useEditorTabs(
     save,
     saveAs,
     markDirty,
+    reorderTabs,
   };
 }
