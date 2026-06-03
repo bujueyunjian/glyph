@@ -135,3 +135,75 @@ pub fn list_files(root: String) -> Result<Vec<WorkspaceFile>, String> {
     });
     Ok(out)
 }
+
+// 文件树增删改。已存在不覆盖、目标已存在不重命名——一律响亮 Err,由前端红 toast。
+
+#[tauri::command]
+pub fn create_file(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if p.exists() {
+        return Err(format!("已存在: {path}"));
+    }
+    if let Some(parent) = p.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("创建父目录失败 ({path}): {e}"))?;
+    }
+    fs::write(p, "").map_err(|e| format!("创建文件失败 ({path}): {e}"))
+}
+
+#[tauri::command]
+pub fn create_dir(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if p.exists() {
+        return Err(format!("已存在: {path}"));
+    }
+    fs::create_dir_all(p).map_err(|e| format!("创建目录失败 ({path}): {e}"))
+}
+
+#[tauri::command]
+pub fn rename_path(from: String, to: String) -> Result<(), String> {
+    if Path::new(&to).exists() {
+        return Err(format!("目标已存在: {to}"));
+    }
+    fs::rename(&from, &to).map_err(|e| format!("重命名失败 ({from} → {to}): {e}"))
+}
+
+// 删除文件或目录(目录递归)。属危险操作——前端必须二次确认后才调用。
+#[tauri::command]
+pub fn delete_path(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if p.is_dir() {
+        fs::remove_dir_all(p).map_err(|e| format!("删除目录失败 ({path}): {e}"))
+    } else {
+        fs::remove_file(p).map_err(|e| format!("删除文件失败 ({path}): {e}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{create_file, delete_path, rename_path};
+    use std::fs;
+
+    #[test]
+    fn create_rename_delete_roundtrip() {
+        let base = std::env::temp_dir().join(format!("glyph_fs_test_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&base).unwrap();
+
+        let a = base.join("a.txt");
+        let a_str = a.to_string_lossy().to_string();
+        create_file(a_str.clone()).unwrap();
+        assert!(a.exists());
+        // 重复创建必须报错
+        assert!(create_file(a_str.clone()).is_err());
+
+        let b = base.join("b.txt");
+        let b_str = b.to_string_lossy().to_string();
+        rename_path(a_str, b_str.clone()).unwrap();
+        assert!(!a.exists() && b.exists());
+
+        delete_path(b_str).unwrap();
+        assert!(!b.exists());
+
+        let _ = fs::remove_dir_all(&base);
+    }
+}

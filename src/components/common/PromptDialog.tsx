@@ -6,6 +6,7 @@ export interface PromptField {
   key: string;
   label: string;
   placeholder?: string;
+  defaultValue?: string;
 }
 
 export interface PromptRequest {
@@ -29,7 +30,11 @@ export function PromptDialog({ request, onClose }: PromptDialogProps) {
 
   useEffect(() => {
     setValues(
-      request ? Object.fromEntries(request.fields.map((f) => [f.key, ""])) : {},
+      request
+        ? Object.fromEntries(
+            request.fields.map((f) => [f.key, f.defaultValue ?? ""]),
+          )
+        : {},
     );
   }, [request]);
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { getFileExtension, getFileName } from "@/utils/path";
+import {
+  getDirName,
+  getFileExtension,
+  getFileName,
+  joinPath,
+} from "@/utils/path";
 
 describe("getFileName", () => {
   it("取 POSIX 路径的文件名", () => {
@@ -29,5 +34,23 @@ describe("getFileExtension", () => {
   });
   it("点文件(如 .gitignore)不算扩展名", () => {
     expect(getFileExtension(".gitignore")).toBe("");
+  });
+});
+
+describe("getDirName", () => {
+  it("取 POSIX 父目录", () => {
+    expect(getDirName("/a/b/c.txt")).toBe("/a/b");
+  });
+  it("取 Windows 父目录", () => {
+    expect(getDirName("C:\\a\\b.txt")).toBe("C:\\a");
+  });
+  it("无父级返回空串", () => {
+    expect(getDirName("file.txt")).toBe("");
+  });
+});
+
+describe("joinPath", () => {
+  it("用 / 拼接", () => {
+    expect(joinPath("/a/b", "c.txt")).toBe("/a/b/c.txt");
   });
 });

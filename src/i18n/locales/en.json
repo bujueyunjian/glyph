@@ -84,7 +84,14 @@
     "quitUnsaved": "You have unsaved changes. Quit anyway?"
   },
   "explorer": {
-    "readFailed": "Failed to read directory: {{msg}}"
+    "readFailed": "Failed to read directory: {{msg}}",
+    "newFile": "New File",
+    "newFolder": "New Folder",
+    "rename": "Rename",
+    "delete": "Delete",
+    "nameLabel": "Name",
+    "confirmDelete": "Delete {{name}}?",
+    "opFailed": "Operation failed: {{msg}}"
   },
   "settings": {
     "title": "Settings",

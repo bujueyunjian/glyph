@@ -13,3 +13,14 @@ export function getFileExtension(path: string): string {
   if (dotIndex <= 0) return "";
   return name.slice(dotIndex + 1).toLowerCase();
 }
+
+/** 取父目录路径,如 "/a/b/c.txt" → "/a/b";无父级返回空串。兼容 / 与 \。 */
+export function getDirName(path: string): string {
+  const idx = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return idx <= 0 ? "" : path.slice(0, idx);
+}
+
+/** 拼接目录与名称(统一用 / 分隔,Rust 侧跨平台可接受)。 */
+export function joinPath(dir: string, name: string): string {
+  return `${dir}/${name}`;
+}

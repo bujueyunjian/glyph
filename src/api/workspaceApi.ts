@@ -11,3 +11,12 @@ export function listDir(path: string): Promise<DirEntry[]> {
 export function listFiles(root: string): Promise<WorkspaceFile[]> {
   return call<WorkspaceFile[]>("list_files", { root });
 }
+
+// 监听工作区目录变化(变化经事件 fs://changed 推送)。对应 Rust watch.rs。
+export function watchWorkspace(path: string): Promise<void> {
+  return call<void>("watch_workspace", { path });
+}
+
+export function unwatchWorkspace(): Promise<void> {
+  return call<void>("unwatch_workspace");
+}

@@ -9,14 +9,17 @@ import {
 } from "react";
 import { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import { getAppInfo } from "@/api/appApi";
+import { createDir, createFile, deletePath, renamePath } from "@/api/fileApi";
+import { watchWorkspace } from "@/api/workspaceApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
 import { FileTree } from "@/components/explorer/FileTree";
+import type { FileTreeActions } from "@/components/explorer/FileTreeNode";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import {
   PromptDialog,
@@ -44,7 +47,7 @@ import {
   trimLineEnds,
   wrapLines,
 } from "@/features/textops/lineOps";
-import { getFileExtension } from "@/utils/path";
+import { getDirName, getFileExtension, joinPath } from "@/utils/path";
 
 // 编辑器(含 CodeMirror 核心)懒加载:空态启动时不加载,打开文件才拉取。
 const CodeEditor = lazy(() =>
@@ -92,6 +95,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [promptReq, setPromptReq] = useState<PromptRequest | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [treeVersion, setTreeVersion] = useState(0);
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -174,6 +178,65 @@ function App() {
       setTimeout(jump, 50);
     },
     [openPath],
+  );
+
+  // 文件树增删改:弹输入/确认 → 调命令 → 刷新(treeVersion 变更使 FileTree 重挂载重列)。
+  const treeActions = useMemo<FileTreeActions>(
+    () => ({
+      onCreate: (parentDir, isDir) =>
+        setPromptReq({
+          title: isDir ? t("explorer.newFolder") : t("explorer.newFile"),
+          fields: [{ key: "name", label: t("explorer.nameLabel") }],
+          onSubmit: (v) => {
+            const name = v.name?.trim();
+            if (!name) return;
+            const target = joinPath(parentDir, name);
+            (isDir ? createDir(target) : createFile(target))
+              .then(() => setTreeVersion((n) => n + 1))
+              .catch((err) =>
+                toast.error(
+                  t("explorer.opFailed", { msg: (err as Error).message }),
+                ),
+              );
+          },
+        }),
+      onRename: (path, name) =>
+        setPromptReq({
+          title: t("explorer.rename"),
+          fields: [
+            { key: "name", label: t("explorer.nameLabel"), defaultValue: name },
+          ],
+          onSubmit: (v) => {
+            const next = v.name?.trim();
+            if (!next || next === name) return;
+            renamePath(path, joinPath(getDirName(path), next))
+              .then(() => setTreeVersion((n) => n + 1))
+              .catch((err) =>
+                toast.error(
+                  t("explorer.opFailed", { msg: (err as Error).message }),
+                ),
+              );
+          },
+        }),
+      onDelete: (path, name) => {
+        void (async () => {
+          const ok = await ask(t("explorer.confirmDelete", { name }), {
+            kind: "warning",
+          });
+          if (!ok) return;
+          try {
+            await deletePath(path);
+            closeTab(path);
+            setTreeVersion((n) => n + 1);
+          } catch (err) {
+            toast.error(
+              t("explorer.opFailed", { msg: (err as Error).message }),
+            );
+          }
+        })();
+      },
+    }),
+    [t, closeTab],
   );
 
   // 命令面板的命令集:按当前能力构建(文件操作 + 每个主题一条切换)。
@@ -395,6 +458,33 @@ function App() {
     );
   }, [tabs, activePath, saveSession]);
 
+  // 文件监听:rootPath 变更则监听工作区,fs://changed 防抖刷新文件树(动态 import 不进首屏)。
+  useEffect(() => {
+    if (!rootPath) return;
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    let timer: number | undefined;
+    void (async () => {
+      try {
+        await watchWorkspace(rootPath);
+        const { listen } = await import("@tauri-apps/api/event");
+        const fn = await listen("fs://changed", () => {
+          window.clearTimeout(timer);
+          timer = window.setTimeout(() => setTreeVersion((n) => n + 1), 300);
+        });
+        if (disposed) fn();
+        else unlisten = fn;
+      } catch (err) {
+        console.warn("文件监听注册失败(非 Tauri 上下文?):", err);
+      }
+    })();
+    return () => {
+      disposed = true;
+      window.clearTimeout(timer);
+      unlisten?.();
+    };
+  }, [rootPath]);
+
   // 拦截整窗关闭:有未保存内容时确认兜底(退出不可撤销,故此处用确认而非撤销)。
   // 动态 import 窗口 API:挂载期一次性逻辑,不进首屏(守"首屏只含外壳"红线)。
   useEffect(() => {
@@ -429,9 +519,11 @@ function App() {
         sidebar={
           rootPath && sidebarVisible ? (
             <FileTree
+              key={treeVersion}
               rootPath={rootPath}
               activePath={activePath ?? undefined}
               onOpenFile={openPath}
+              actions={treeActions}
             />
           ) : undefined
         }

@@ -1,10 +1,14 @@
 mod commands;
 mod proc;
+mod watch;
 
 use commands::app::get_app_info;
-use commands::file::{list_dir, list_files, open_file, save_file};
+use commands::file::{
+    create_dir, create_file, delete_path, list_dir, list_files, open_file, rename_path, save_file,
+};
 use commands::search::search_files;
 use proc::{proc_kill, proc_spawn, proc_write, ProcRegistry};
+use watch::{unwatch_workspace, watch_workspace, WatchState};
 
 // 应用装配入口。插件 + state + command 注册都在这里;命令实现在 commands/* 与 proc.rs。
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,16 +17,23 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(ProcRegistry::default())
+        .manage(WatchState::default())
         .invoke_handler(tauri::generate_handler![
             get_app_info,
             open_file,
             save_file,
             list_dir,
             list_files,
+            create_file,
+            create_dir,
+            rename_path,
+            delete_path,
             search_files,
             proc_spawn,
             proc_write,
-            proc_kill
+            proc_kill,
+            watch_workspace,
+            unwatch_workspace
         ])
         .run(tauri::generate_context!())
         .expect("Glyph 启动失败");

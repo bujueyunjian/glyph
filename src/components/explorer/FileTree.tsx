@@ -5,16 +5,22 @@ import { useTranslation } from "react-i18next";
 import { listDir } from "@/api/workspaceApi";
 import type { DirEntry } from "@/types/fsTypes";
 import { getFileName } from "@/utils/path";
-import { FileTreeNode } from "./FileTreeNode";
+import { FileTreeNode, type FileTreeActions } from "./FileTreeNode";
 
 interface FileTreeProps {
   rootPath: string;
   activePath?: string;
   onOpenFile: (path: string) => void;
+  actions: FileTreeActions;
 }
 
 // 文件树侧栏:以 rootPath 为根列出顶层,子级由 FileTreeNode 懒展开。
-export function FileTree({ rootPath, activePath, onOpenFile }: FileTreeProps) {
+export function FileTree({
+  rootPath,
+  activePath,
+  onOpenFile,
+  actions,
+}: FileTreeProps) {
   const { t } = useTranslation();
   const [entries, setEntries] = useState<DirEntry[] | null>(null);
 
@@ -45,6 +51,7 @@ export function FileTree({ rootPath, activePath, onOpenFile }: FileTreeProps) {
             depth={0}
             activePath={activePath}
             onOpenFile={onOpenFile}
+            actions={actions}
           />
         ))}
       </div>

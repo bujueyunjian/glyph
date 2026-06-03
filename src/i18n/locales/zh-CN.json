@@ -84,7 +84,14 @@
     "quitUnsaved": "有未保存的更改,确定退出吗?"
   },
   "explorer": {
-    "readFailed": "读取目录失败: {{msg}}"
+    "readFailed": "读取目录失败: {{msg}}",
+    "newFile": "新建文件",
+    "newFolder": "新建文件夹",
+    "rename": "重命名",
+    "delete": "删除",
+    "nameLabel": "名称",
+    "confirmDelete": "确定删除 {{name}}?",
+    "opFailed": "操作失败: {{msg}}"
   },
   "settings": {
     "title": "设置",
