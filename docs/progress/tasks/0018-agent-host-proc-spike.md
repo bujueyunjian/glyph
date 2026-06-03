@@ -1,8 +1,8 @@
 # 任务 0018：Agent 宿主地基 spike（proc.rs 子进程闭环）
 
-- 状态：⏳ 计划中（可选 / 并行，视人力）
-- 里程碑：M4（差异化支柱③）地基预研 · 关联任务：#?（TaskList）· 负责人：待定
-- 开工：—— · 收工：——
+- 状态：🚧 子进程 + 双向 stdio + Rust→UI 推送 最小闭环完成并过 `pnpm check`（spawn 闭环经 cargo test 运行期验证）；前端订阅 / 权限提示 / 端到端待
+- 里程碑：M4（差异化支柱③）地基预研 · 关联任务：#?（TaskList）· 负责人：Claude
+- 开工：2026-06-03 · 收工：——
 
 > 规范见 [`../../workflow/doc-driven-workflow.md`](../../workflow/doc-driven-workflow.md)。开工前填「Plan」，收工后补「Outcome」。
 > 架构依据：[`../../adr/0004-ai-agent-host-mcp-acp.md`](../../adr/0004-ai-agent-host-mcp-acp.md)。
@@ -61,16 +61,26 @@
 
 ---
 
-## Outcome（收工后）
+## Outcome（最小闭环 · 2026-06-03）
 
-### 实际改动
-<待填>
+### 实际改动（已完成：Rust 地基最小闭环）
+- `src-tauri/src/proc.rs`：
+  - `ProcRegistry`（Tauri State，Mutex 管理多子进程）+ `ManagedChild`（句柄 + stdin）。
+  - `build_command`：三管道接管 + **Windows `CREATE_NO_WINDOW`**（release 不闪黑色控制台,CLAUDE.md 跨平台铁律）。
+  - 命令 `proc_spawn`（spawn + 后台线程逐行读 stdout → 事件 `proc://stdout`，结束发 `proc://closed`）/ `proc_write`（写 stdin）/ `proc_kill`。这是 **Rust→UI 推送通道**首次落地（A/D/F 共用地基）。
+- `src-tauri/src/lib.rs`：`mod proc` + `.manage(ProcRegistry)` + 三命令注册。
 
 ### 验证结果
-<待填；失败如实记录，附输出，不掩盖>
+- ✅ `rs:fmt` / `rs:clippy`（0 warning）。
+- ✅ **`rs:test` 运行期验证**：`spawn_roundtrips_stdin_to_stdout`（spawn `cat` + 写 stdin + 读回 stdout）通过——spawn + 双向 stdio 闭环真跑过,不只是编译。
+- ✅ 完整 `pnpm check` 全绿（前端 18 + Rust 1 测试）。
+- ⏳ **emit→UI 端到端未验**：`proc://stdout` 推送到前端的闭环需 app 运行（显示环境）。
 
-### 遗留问题
-<待填>
+### 遗留问题（M4 全量未做,本增量只是地基）
+- 前端 `agentApi.ts` + `@tauri-apps/api/event` 订阅 + `agentTypes.ts` 未做（下一增量）。
+- **权限提示 + 沙箱**（`fs/write`、`terminal/*` 显式授权,ADR-0004 安全红线）未做——一等公民,接真实 agent 前必须补。
+- 完整 ACP/MCP 协议、远程传输、终端接管、流式 diff、provider 路由 = M4 全量。
 
 ### 下一步
-<待填>
+- 前端订阅 `proc://stdout`/`closed` + agentApi 封装,用真实本地 ACP/MCP stub 验端到端（需显示环境）。
+- 加权限提示骨架,再谈接 Claude Code/Codex。
