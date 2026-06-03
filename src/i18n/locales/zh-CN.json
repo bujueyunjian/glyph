@@ -7,6 +7,14 @@
     "undo": "撤销",
     "closeTab": "关闭标签"
   },
+  "textops": {
+    "group": "编辑行",
+    "trimEnd": "去除行尾空格",
+    "sortLines": "排序行",
+    "dedupeLines": "去重行",
+    "upperCase": "转为大写",
+    "lowerCase": "转为小写"
+  },
   "menu": {
     "file": "文件",
     "edit": "编辑",

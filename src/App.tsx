@@ -28,6 +28,13 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/hooks/useTheme";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import type { CommandAction } from "@/types/commandTypes";
+import {
+  dedupeLines,
+  sortLines,
+  toLowerCase,
+  toUpperCase,
+  trimLineEnds,
+} from "@/features/textops/lineOps";
 import { getFileExtension } from "@/utils/path";
 
 // 编辑器(含 CodeMirror 核心)懒加载:空态启动时不加载,打开文件才拉取。
@@ -111,6 +118,28 @@ function App() {
     if (view) (await import("@codemirror/search")).openSearchPanel(view);
   }, [activeView]);
 
+  // 文本力量:行变换作用于选区(扩到整行)或整篇;纯函数 + view.dispatch(不静态导入 CM)。
+  const transformLines = useCallback(
+    (fn: (text: string) => string) => {
+      const view = activeView();
+      if (!view) return;
+      const { state } = view;
+      const sel = state.selection.main;
+      const from = sel.empty ? 0 : state.doc.lineAt(sel.from).from;
+      const to = sel.empty ? state.doc.length : state.doc.lineAt(sel.to).to;
+      const text = state.doc.sliceString(from, to);
+      const next = fn(text);
+      if (next !== text) {
+        view.dispatch({
+          changes: { from, to, insert: next },
+          selection: { anchor: from, head: from + next.length },
+        });
+      }
+      view.focus();
+    },
+    [activeView],
+  );
+
   // 命令面板的命令集:按当前能力构建(文件操作 + 每个主题一条切换)。
   const commands = useMemo<CommandAction[]>(
     () => [
@@ -148,6 +177,36 @@ function App() {
         shortcut: "Ctrl/⌘ ,",
         perform: () => setSettingsOpen(true),
       },
+      {
+        id: "textops.trimEnd",
+        title: t("textops.trimEnd"),
+        group: t("textops.group"),
+        perform: () => transformLines(trimLineEnds),
+      },
+      {
+        id: "textops.sortLines",
+        title: t("textops.sortLines"),
+        group: t("textops.group"),
+        perform: () => transformLines(sortLines),
+      },
+      {
+        id: "textops.dedupeLines",
+        title: t("textops.dedupeLines"),
+        group: t("textops.group"),
+        perform: () => transformLines(dedupeLines),
+      },
+      {
+        id: "textops.upperCase",
+        title: t("textops.upperCase"),
+        group: t("textops.group"),
+        perform: () => transformLines(toUpperCase),
+      },
+      {
+        id: "textops.lowerCase",
+        title: t("textops.lowerCase"),
+        group: t("textops.group"),
+        perform: () => transformLines(toLowerCase),
+      },
       ...themes.map((th) => ({
         id: `theme.${th.id}`,
         title: `${t("menu.theme")}: ${th.label}`,
@@ -155,7 +214,7 @@ function App() {
         perform: () => setTheme(th.id),
       })),
     ],
-    [t, open, openFolder, save, saveAs, themes, setTheme],
+    [t, open, openFolder, save, saveAs, themes, setTheme, transformLines],
   );
 
   useEffect(() => {

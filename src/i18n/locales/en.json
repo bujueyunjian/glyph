@@ -7,6 +7,14 @@
     "undo": "Undo",
     "closeTab": "Close tab"
   },
+  "textops": {
+    "group": "Edit Lines",
+    "trimEnd": "Trim trailing whitespace",
+    "sortLines": "Sort lines",
+    "dedupeLines": "Remove duplicate lines",
+    "upperCase": "Uppercase",
+    "lowerCase": "Lowercase"
+  },
   "menu": {
     "file": "File",
     "edit": "Edit",
