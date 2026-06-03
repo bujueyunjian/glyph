@@ -4,7 +4,7 @@
 > 方向细节见 [`../roadmap/roadmap.md`](../roadmap/roadmap.md)；每个任务的前/后文档见 [`tasks/`](tasks/)。
 
 - 最后更新：2026-06-03（M0 ✅ + M1 主体 ✅；经多智能体审查 + pantheon 决策 + 对抗式红队核查，定下一程方向，见「下一步」）
-- 当前里程碑：**M1 核心编辑体验**（主体完成；下一程＝坐实「快」+ Markdown Live Preview 首砖）
+- 当前里程碑：**M2 可日用：编辑力 + 智能与搜索**（进行中：文本力量首刀 0020）
 - 一句话定位：公司能免费铺给 500 名开发者、无需授权、无需法务审查的跨平台代码编辑器——又快、又轻、又美，任何 AI agent 都能插进来。
 
 ---
@@ -47,14 +47,15 @@
 >
 > **本轮进展（2026-06-03，分支 `feat/m1-hardening-and-ci`）**：0015 ✅ 代码完成（过 `pnpm check` + 真跑 `tauri:dev` 启动成功，Playwright 验焦点环/空态）· 0016 ✅ 测试/CI/首屏体积门禁（键入延迟实测待显示环境）· 0017 🚧 渲染+消毒核心完成（含 XSS 单测）· 0018 🚧 子进程+stdio+Rust→UI 推送最小闭环（`cargo test` 验 spawn 闭环）。**仍需显示环境**：0015 原生交互手验、0016 键入延迟尺子、0017 CM 装饰接入后的延迟验证、0018 emit→UI 端到端。
 
-1. **[0016] 性能实测与 CI 门禁**（最前 · 不可让）——给「快」装尺子和刹车：键入延迟 / 冷启动实测 + CI 门禁 + `pnpm check` 纳入 test；对比 Zed/VS Code 基线。见 [`tasks/0016`](tasks/0016-perf-ci-gate.md)。
-2. **[0015] 良知止血**（并行）——脏标签可撤销关闭 + 窗口关闭拦截 + `save_file` 原子写 + 全局 `:focus-visible` + 空态速查 + 最小会话恢复（缺=Degraded / 坏=报错）+ 清存量 fallback。见 [`tasks/0015`](tasks/0015-experience-hardening.md)。
-3. **[0017] Markdown Live Preview 窄切片**（门禁就位后）——差异化支柱②首砖，dogfood [ADR-0006](../adr/0006-internal-extension-points.md) 内部扩展点；CM6 原生装饰只算视口，DOMPurify 锁版本，绝不放宽 CSP。见 [`tasks/0017`](tasks/0017-markdown-live-preview.md)。
-4. **[0018] Agent 宿主地基 spike**（可选 / 并行，视人力）——`proc.rs` 子进程 + stdio + Rust→UI 推送通道最小闭环，守支柱③竞争窗口（不做 M4 全量）。见 [`tasks/0018`](tasks/0018-agent-host-proc-spike.md)。
+**本程（0015–0019）已交付**（加固 / 测试CI / 体积门禁 / MD 核心 / proc.rs 地基 / v0.0.1 四平台发布）。下一程主线 = **M2「可日用」**（见 [roadmap](../roadmap/roadmap.md) + AI 方向 [ADR-0007](../adr/0007-ai-as-edit-command.md)）：
 
-**明确放弃 / 推迟**：LSP（纯 table-stakes，最重）、③全量 all-in、文件树增删改 / 跨文件搜索（A/C，零差异化）、插件系统镀金版（公共 API/沙箱/市场）、分屏 / 标签拖拽。
-**已知欠债**：Rust→UI 推送通道 + `notify` 文件监听是 A/D/F 共用地基（0018 顺带建一部分），触及文件树刷新 / 外部改动 / LSP 时优先补。
-**反向触发**：Zed 数周内补齐宽松许可证+跨平台 → 加速 0017；出现第二个原生 ACP 宿主 / ACP 远程 spec 落地 / 客户把 agent 列为采购前置 → 0018 升级反超 0017。
+1. **[0020] 文本力量·行变换最小集**（命令面板动词 + 多光标）—— 已开工。
+2. 跨文件搜索(ripgrep) + 文件树增删改+监听（复用 proc.rs 推送）+ 分屏。
+3. LSP（补全/诊断/跳转，可拆 M2.5）+ 键入延迟尺子（需显示环境）。
+
+> **AI 方向**（pantheon 客观决策）：不做"又一个有 AI 的编辑器"，做"任何 agent 的最佳中立驾驶舱"。护城河 = **M4 Agent 宿主（AI 时代决胜版）**；in-editor AI 走「AI = 返回编辑/产物的命令」host-first + 薄 BYO-key（ADR-0007）；明确不硬刚 Cursor；text→图表依赖 M3 mermaid 先成。
+
+**已知欠债**：键入延迟尺子（需显示环境）；`notify` 文件监听 + LSP 复用 proc.rs 推送通道；macOS/Windows 签名公证 + updater（M6）。
 
 ## 性能/"轻"感知（用户反馈：感觉比 Notepad++/Typora 重）—— 任务 #7 已修
 > 结论：部分是 dev 调试构建的错觉，部分是真实问题。判断"轻不轻"要看 `pnpm tauri build` 的 release 包，不是 `tauri:dev`。
