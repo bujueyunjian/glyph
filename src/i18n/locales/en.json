@@ -135,6 +135,7 @@
     "wordWrap": "Word wrap",
     "lineNumbers": "Line numbers",
     "ligatures": "Ligatures",
+    "markdownLivePreview": "Markdown live preview",
     "reset": "Reset to defaults",
     "close": "Close"
   },

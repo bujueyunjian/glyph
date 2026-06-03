@@ -135,6 +135,7 @@
     "wordWrap": "自动换行",
     "lineNumbers": "显示行号",
     "ligatures": "连字",
+    "markdownLivePreview": "Markdown 实时预览",
     "reset": "恢复默认",
     "close": "关闭"
   },

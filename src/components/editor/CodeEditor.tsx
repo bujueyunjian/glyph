@@ -9,6 +9,7 @@ import { search, searchKeymap } from "@codemirror/search";
 import type { ThemeKind } from "@/theme/themes";
 import type { EditorSettings } from "@/types/settingsTypes";
 import { loadLanguageExtension } from "./languageRegistry";
+import { markdownConceal } from "./markdownDecorations";
 
 interface CodeEditorProps {
   /** 初始内容(仅挂载时取一次);文档之后由 CodeMirror 自己持有。 */
@@ -75,6 +76,7 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
       const indent = settings.insertSpaces
         ? " ".repeat(settings.tabSize)
         : "\t";
+      const isMarkdown = extension === "md" || extension === "markdown";
       return [
         appearance,
         EditorState.tabSize.of(settings.tabSize),
@@ -83,8 +85,12 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
         search({ top: true }),
         keymap.of(searchKeymap),
         ...languageExt,
+        // Markdown Live Preview:隐藏非光标行的语法标记(仅 md + 设置开启)。
+        ...(isMarkdown && settings.markdownLivePreview
+          ? [markdownConceal]
+          : []),
       ];
-    }, [languageExt, settings]);
+    }, [languageExt, settings, extension]);
 
     // 行号开关走 basicSetup(与默认项合并,其余特性不变)。
     const basicSetup = useMemo(

@@ -6,6 +6,7 @@ export interface EditorSettings {
   wordWrap: boolean; // 自动换行
   lineNumbers: boolean; // 显示行号
   ligatures: boolean; // 连字(默认关,见设计准则)
+  markdownLivePreview: boolean; // Markdown 行内实时预览:隐藏非光标行的语法标记(默认开)
 }
 
 export const DEFAULT_SETTINGS: EditorSettings = {
@@ -15,6 +16,7 @@ export const DEFAULT_SETTINGS: EditorSettings = {
   wordWrap: false,
   lineNumbers: true,
   ligatures: false,
+  markdownLivePreview: true,
 };
 
 export const FONT_SIZE_MIN = 10;

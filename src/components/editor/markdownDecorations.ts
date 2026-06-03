@@ -81,3 +81,76 @@ export const markdownInlineStyle = ViewPlugin.fromClass(
   },
   { decorations: (plugin) => plugin.decorations },
 );
+
+// Live Preview 隐藏的语法标记节点(Lezer markdown 的分隔符)。隐藏后正文"所见即美",
+// 但**光标所在行始终显示原始标记**(可正常编辑),即 Obsidian 式 Live Preview 取向。
+const CONCEAL_NODES = new Set([
+  "HeaderMark",
+  "EmphasisMark",
+  "CodeMark",
+  "StrikethroughMark",
+  "QuoteMark",
+  "LinkMark",
+]);
+
+const CONCEAL = Decoration.replace({});
+
+// 收集选区涉及的所有行号(含跨行选区的每一行):这些行显示原始标记,不隐藏。
+export function selectionLines(state: EditorState): Set<number> {
+  const lines = new Set<number>();
+  for (const range of state.selection.ranges) {
+    const first = state.doc.lineAt(range.from).number;
+    const last = state.doc.lineAt(range.to).number;
+    for (let line = first; line <= last; line += 1) lines.add(line);
+  }
+  return lines;
+}
+
+// 在可见区内,把不在光标行的语法标记节点替换隐藏(O(viewport),守延迟红线)。
+export function buildConcealDecorations(
+  state: EditorState,
+  ranges: readonly { from: number; to: number }[],
+  cursorLines: Set<number>,
+): DecorationSet {
+  const decorations: Range<Decoration>[] = [];
+  for (const { from, to } of ranges) {
+    syntaxTree(state).iterate({
+      from,
+      to,
+      enter: (node) => {
+        if (!CONCEAL_NODES.has(node.name) || node.to <= node.from) return;
+        // 光标所在行显示原始标记,便于编辑(Live Preview 核心交互)。
+        if (cursorLines.has(state.doc.lineAt(node.from).number)) return;
+        decorations.push(CONCEAL.range(node.from, node.to));
+      },
+    });
+  }
+  return Decoration.set(decorations, true);
+}
+
+// Live Preview 隐藏标记插件:文档/视口/光标变化时按可见区与光标行重建。
+export const markdownConceal = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = buildConcealDecorations(
+        view.state,
+        view.visibleRanges,
+        selectionLines(view.state),
+      );
+    }
+
+    update(update: ViewUpdate) {
+      // 含 selectionSet:光标移动需重算哪行显示原始标记。
+      if (update.docChanged || update.viewportChanged || update.selectionSet) {
+        this.decorations = buildConcealDecorations(
+          update.view.state,
+          update.view.visibleRanges,
+          selectionLines(update.view.state),
+        );
+      }
+    }
+  },
+  { decorations: (plugin) => plugin.decorations },
+);

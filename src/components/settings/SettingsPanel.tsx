@@ -155,6 +155,17 @@ export function SettingsPanel({
                 onChange={(e) => updateSetting("ligatures", e.target.checked)}
               />
             </Row>
+
+            <Row label={t("settings.markdownLivePreview")}>
+              <input
+                type="checkbox"
+                className="size-4 accent-[var(--color-accent)]"
+                checked={settings.markdownLivePreview}
+                onChange={(e) =>
+                  updateSetting("markdownLivePreview", e.target.checked)
+                }
+              />
+            </Row>
           </div>
 
           <div className="flex justify-end border-t border-[var(--color-border)] px-4 py-3">
