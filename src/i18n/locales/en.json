@@ -63,6 +63,9 @@
     "count": "{{count}} results",
     "failed": "Search failed: {{msg}}"
   },
+  "preview": {
+    "title": "Markdown Preview"
+  },
   "workbench": {
     "emptyTitle": "Start editing",
     "emptyHint": "Open a file (Ctrl/Cmd+O), or press the command palette to begin",

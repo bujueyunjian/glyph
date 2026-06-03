@@ -63,6 +63,9 @@
     "count": "找到 {{count}} 处",
     "failed": "搜索失败: {{msg}}"
   },
+  "preview": {
+    "title": "Markdown 预览"
+  },
   "workbench": {
     "emptyTitle": "开始编辑",
     "emptyHint": "打开一个文件(Ctrl/Cmd+O),或按命令面板开始",

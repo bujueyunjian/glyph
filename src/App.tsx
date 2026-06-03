@@ -56,6 +56,13 @@ const CodeEditor = lazy(() =>
   })),
 );
 
+// Markdown 预览懒加载:marked/dompurify 随它进按需 chunk,不进首屏(性能红线)。
+const MarkdownPreview = lazy(() =>
+  import("@/components/editor/MarkdownPreview").then((m) => ({
+    default: m.MarkdownPreview,
+  })),
+);
+
 function App() {
   const { t } = useTranslation();
   const [appVersion, setAppVersion] = useState<string>();
@@ -96,6 +103,9 @@ function App() {
   const [promptReq, setPromptReq] = useState<PromptRequest | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [treeVersion, setTreeVersion] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState("");
+  const previewTimerRef = useRef<number | undefined>(undefined);
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -179,6 +189,29 @@ function App() {
     },
     [openPath],
   );
+
+  // 编辑回调:标脏 + (预览开启时)防抖刷新 Markdown 预览内容(不阻塞打字热路径)。
+  const handleDocChange = useCallback(
+    (path: string) => {
+      markDirty(path);
+      if (previewOpen && path === activePath) {
+        window.clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = window.setTimeout(
+          () => setPreviewContent(getContent(path)),
+          200,
+        );
+      }
+    },
+    [markDirty, previewOpen, activePath, getContent],
+  );
+
+  const activeIsMarkdown =
+    !!activePath && ["md", "markdown"].includes(getFileExtension(activePath));
+
+  // 预览开启或切换文件时,立即用当前文档内容刷新预览。
+  useEffect(() => {
+    if (previewOpen && activePath) setPreviewContent(getContent(activePath));
+  }, [previewOpen, activePath, getContent]);
 
   // 文件树增删改:弹输入/确认 → 调命令 → 刷新(treeVersion 变更使 FileTree 重挂载重列)。
   const treeActions = useMemo<FileTreeActions>(
@@ -282,6 +315,13 @@ function App() {
         group: t("menu.edit"),
         shortcut: "Ctrl/⌘ ⇧ F",
         perform: () => setSearchOpen(true),
+      },
+      {
+        id: "markdown.preview",
+        title: t("preview.title"),
+        group: t("menu.view"),
+        shortcut: "Ctrl/⌘ ⇧ V",
+        perform: () => setPreviewOpen((prev) => !prev),
       },
       {
         id: "textops.trimEnd",
@@ -394,6 +434,9 @@ function App() {
       } else if (event.shiftKey && key === "f") {
         event.preventDefault();
         setSearchOpen((prev) => !prev);
+      } else if (event.shiftKey && key === "v") {
+        event.preventDefault();
+        setPreviewOpen((prev) => !prev);
       } else if (key === "o") {
         event.preventDefault();
         void open();
@@ -561,35 +604,44 @@ function App() {
               onClose={closeTab}
             />
           ) : null}
-          <div className="min-h-0 flex-1">
-            {tabs.length > 0 ? (
-              <Suspense fallback={<div className="h-full w-full" />}>
-                {tabs.map((tab) => (
-                  <div
-                    key={tab.path}
-                    className={
-                      tab.path === activePath ? "h-full w-full" : "hidden"
-                    }
-                  >
-                    <CodeEditor
-                      ref={(instance) => {
-                        if (instance)
-                          editorRefs.current.set(tab.path, instance);
-                        else editorRefs.current.delete(tab.path);
-                      }}
-                      initialValue={tab.initialContent}
-                      initialCursor={restoredCursorsRef.current[tab.path]}
-                      extension={getFileExtension(tab.path)}
-                      themeKind={activeTheme.kind}
-                      settings={settings}
-                      onDocChange={() => markDirty(tab.path)}
-                    />
-                  </div>
-                ))}
-              </Suspense>
-            ) : (
-              <EmptyState />
-            )}
+          <div className="flex min-h-0 flex-1">
+            <div className="min-w-0 flex-1">
+              {tabs.length > 0 ? (
+                <Suspense fallback={<div className="h-full w-full" />}>
+                  {tabs.map((tab) => (
+                    <div
+                      key={tab.path}
+                      className={
+                        tab.path === activePath ? "h-full w-full" : "hidden"
+                      }
+                    >
+                      <CodeEditor
+                        ref={(instance) => {
+                          if (instance)
+                            editorRefs.current.set(tab.path, instance);
+                          else editorRefs.current.delete(tab.path);
+                        }}
+                        initialValue={tab.initialContent}
+                        initialCursor={restoredCursorsRef.current[tab.path]}
+                        extension={getFileExtension(tab.path)}
+                        themeKind={activeTheme.kind}
+                        settings={settings}
+                        onDocChange={() => handleDocChange(tab.path)}
+                      />
+                    </div>
+                  ))}
+                </Suspense>
+              ) : (
+                <EmptyState />
+              )}
+            </div>
+            {previewOpen && activeIsMarkdown ? (
+              <div className="min-w-0 flex-1 border-l border-[var(--color-border)]">
+                <Suspense fallback={<div className="h-full w-full" />}>
+                  <MarkdownPreview content={previewContent} />
+                </Suspense>
+              </div>
+            ) : null}
           </div>
         </div>
       </WorkbenchLayout>
