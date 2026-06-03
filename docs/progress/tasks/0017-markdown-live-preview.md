@@ -1,8 +1,8 @@
 # 任务 0017：Markdown Live Preview（窄垂直切片，第一方 dogfood）
 
-- 状态：⏳ 计划中
-- 里程碑：M3（差异化支柱②）· 关联任务：#?（TaskList）· 负责人：待定
-- 开工：—— · 收工：——
+- 状态：🚧 渲染+消毒核心完成并过 `pnpm check`（含 XSS 单测）；CM 装饰接入 / 实时预览 / 分屏待（键入延迟实测需显示环境）
+- 里程碑：M3（差异化支柱②）· 关联任务：#?（TaskList）· 负责人：Claude
+- 开工：2026-06-03 · 收工：——
 
 > 规范见 [`../../workflow/doc-driven-workflow.md`](../../workflow/doc-driven-workflow.md)。开工前填「Plan」，收工后补「Outcome」。
 > 架构依据：[`../../adr/0006-internal-extension-points.md`](../../adr/0006-internal-extension-points.md)（先读，本任务是其首个 dogfood 消费者）。
@@ -60,16 +60,23 @@
 
 ---
 
-## Outcome（收工后）
+## Outcome（核心部分 · 2026-06-03）
 
-### 实际改动
-<待填>
+### 实际改动（已完成：渲染 + 消毒核心）
+- 新增依赖：`marked`（GFM 解析）、`dompurify`（消毒）；devDep `jsdom`（供 vitest jsdom 环境跑消毒单测）。
+- `src/features/markdown/render.ts`：`renderMarkdown(src)` = marked 解析(GFM) → DOMPurify 消毒，**绝不裸传 raw HTML**（ADR-0002 安全红线）。
+- `src/features/markdown/render.test.ts`：5 例,覆盖基础渲染/GFM 删除线 + **3 项 XSS**（`<script>` / `onerror` / `javascript:` 全部消毒）。
 
 ### 验证结果
-<待填；失败如实记录，附输出，不掩盖>
+- ✅ `pnpm test`：18/18（新增 5 例 MD）。
+- ✅ 完整 `pnpm check` 全绿（typecheck/lint/format/test/rs:*）。
+- ✅ `pnpm build && pnpm perf:budget`：首屏 **127.1KB 不变**——marked/dompurify 未进首屏（render.ts 暂未被 app 引用,tree-shake;后续经懒加载接入须守住此红线）。
 
-### 遗留问题
-<待填>
+### 遗留问题（0017 主体未完）
+- **CM 装饰接入**：尚未经 ADR-0006 内部「装饰提供者」接口把 render/Live Preview 挂到 `CodeEditor`；行内 Live Preview 的 `ViewPlugin`/`Decoration`（只算 `view.visibleRanges` + debounce）未做。
+- **键入延迟实测**：MD 装饰进热路径后需 0016 的延迟尺子把关——尺子需显示环境(见 0016 遗留),故装饰接入须在有显示处验延迟后再合并。
+- frontmatter / 按需分屏 / token 主题统一 / KaTeX(镀金,不做) 等见 Plan 范围。
 
 ### 下一步
-<待填>
+- 经 ADR-0006 内部接口将 `renderMarkdown` 接入 `.md` 的 CM 装饰（视口渲染 + debounce），动态 import 保持不进首屏。
+- 在有显示环境实测键入延迟(0016 尺子)不回退,再合并 MD 实时预览。
