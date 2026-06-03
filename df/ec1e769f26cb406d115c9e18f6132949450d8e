@@ -1,0 +1,26 @@
+docs/progress/tasks/0017-markdown-live-preview.md
+  s_82120e9b499222::t_dcbcb03105eee4 63,65-68,71-73,75-78,81-82
+  s_82120e9b499222::t_e9ddf7543ff5cd 3-5
+src/features/markdown/render.test.ts
+  s_82120e9b499222::t_d9435c1cd376c4 1-33
+src/features/markdown/render.ts
+  s_82120e9b499222::t_352099126d0fe5 1-12
+package.json
+  s_82120e9b499222::t_cf39cba627c61f 62,65,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dfec1e769f26cb406d115c9e18f6132949450d8e",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
