@@ -1,0 +1,44 @@
+docs/adr/0008-agent-host-implementation.md
+  s_82120e9b499222::t_735a82634d6af6 46-49
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_528c97c736218e 69-77
+src-tauri/src/lib.rs
+  s_82120e9b499222::t_4fe11444cb7ee2 38-39
+  s_82120e9b499222::t_a661762cac0e25 6
+  s_82120e9b499222::t_b3c5e9ee309305 1
+src/api/agentApi.ts
+  s_82120e9b499222::t_a27ddb67ed827e 1-4,9-10
+  s_82120e9b499222::t_ccf0015b373da4 5-8
+src-tauri/src/agent.rs
+  s_82120e9b499222::t_c1209fdfab2a8a 1-204
+src/i18n/locales/en.json
+  s_82120e9b499222::t_09e994b8ca715b 69-77
+src/components/command/AgentResultDialog.tsx
+  s_82120e9b499222::t_ccf0015b373da4 14-17
+  s_82120e9b499222::t_462db2ca27e65e 1-13,18-42
+docs/progress/tasks/0024-acp-mcp-client-foundation.md
+  s_82120e9b499222::t_5f40a236076e30 38-56
+  s_82120e9b499222::t_c0b16813132719 3
+src/App.tsx
+  s_82120e9b499222::t_ca27252182ef2b 22
+  s_82120e9b499222::t_168078dad4b09c 330-357
+  s_82120e9b499222::t_716135b5ad4cfd 111
+  s_82120e9b499222::t_906d74dc3fabaa 699-702
+  s_82120e9b499222::t_31802640c217ef 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c13a7ad3e43b9d85fd56cbff0e04ba3b205a42d3",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
