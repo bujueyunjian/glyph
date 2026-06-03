@@ -19,8 +19,16 @@
     "addPrefix": "每行加前缀",
     "addSuffix": "每行加后缀",
     "wrap": "每行加前后缀",
+    "wordCount": "字数统计",
+    "wordCountResult": "{{words}} 字 · {{chars}} 字符 · {{lines}} 行",
     "prefixLabel": "前缀",
     "suffixLabel": "后缀"
+  },
+  "json": {
+    "group": "JSON",
+    "format": "格式化 JSON",
+    "minify": "压缩 JSON",
+    "invalid": "JSON 无效: {{msg}}"
   },
   "menu": {
     "file": "文件",

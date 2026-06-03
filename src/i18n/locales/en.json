@@ -19,8 +19,16 @@
     "addPrefix": "Add prefix to each line",
     "addSuffix": "Add suffix to each line",
     "wrap": "Wrap each line (prefix + suffix)",
+    "wordCount": "Word count",
+    "wordCountResult": "{{words}} words · {{chars}} chars · {{lines}} lines",
     "prefixLabel": "Prefix",
     "suffixLabel": "Suffix"
+  },
+  "json": {
+    "group": "JSON",
+    "format": "Format JSON",
+    "minify": "Minify JSON",
+    "invalid": "Invalid JSON: {{msg}}"
   },
   "menu": {
     "file": "File",

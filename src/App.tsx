@@ -55,6 +55,8 @@ import {
   toggleOrderedList,
   toggleWrap,
 } from "@/features/markdown/mdFormat";
+import { formatJson, minifyJson } from "@/features/textops/json";
+import { countText } from "@/features/textops/textStats";
 import { getDirName, getFileExtension, joinPath } from "@/utils/path";
 
 // 编辑器(含 CodeMirror 核心)懒加载:空态启动时不加载,打开文件才拉取。
@@ -322,6 +324,31 @@ function App() {
     [activeView],
   );
 
+  // 整篇变换(如 JSON 美化/压缩):替换全文;转换抛错则红 toast(失败响亮,不改文档)。
+  const transformWholeDoc = useCallback(
+    (fn: (text: string) => string, errorKey: string) => {
+      const view = activeView();
+      if (!view) return;
+      try {
+        const next = fn(view.state.doc.toString());
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: next },
+        });
+        view.focus();
+      } catch (err) {
+        toast.error(t(errorKey, { msg: (err as Error).message }));
+      }
+    },
+    [activeView, t],
+  );
+
+  // 字数统计:对聚焦文件全文计数,经 toast 展示(按需,不进打字热路径)。
+  const showWordCount = useCallback(() => {
+    if (!effectiveActive) return;
+    const { words, chars, lines } = countText(getContent(effectiveActive));
+    toast(t("textops.wordCountResult", { words, chars, lines }));
+  }, [effectiveActive, getContent, t]);
+
   // 跨文件搜索命中跳转:打开文件,轮询等编辑器就绪后跳到行(应对懒加载挂载时序)。
   const openHit = useCallback(
     (path: string, line: number) => {
@@ -364,6 +391,9 @@ function App() {
   const effectiveIsMarkdown =
     !!effectiveActive &&
     ["md", "markdown"].includes(getFileExtension(effectiveActive));
+  const effectiveIsJson =
+    !!effectiveActive &&
+    ["json", "jsonc"].includes(getFileExtension(effectiveActive));
 
   // 预览开启或切换文件时,立即用当前文档内容刷新预览。
   useEffect(() => {
@@ -551,6 +581,29 @@ function App() {
         shortcut: "Ctrl/⌘ ⇧ K",
         perform: () => void runLineCommand("deleteLine"),
       },
+      {
+        id: "textops.wordCount",
+        title: t("textops.wordCount"),
+        group: t("textops.group"),
+        perform: showWordCount,
+      },
+      ...(effectiveIsJson
+        ? [
+            {
+              id: "json.format",
+              title: t("json.format"),
+              group: t("json.group"),
+              perform: () =>
+                transformWholeDoc((s) => formatJson(s), "json.invalid"),
+            },
+            {
+              id: "json.minify",
+              title: t("json.minify"),
+              group: t("json.group"),
+              perform: () => transformWholeDoc(minifyJson, "json.invalid"),
+            },
+          ]
+        : []),
       ...(effectiveIsMarkdown
         ? [
             {
@@ -700,8 +753,11 @@ function App() {
       toggleSplit,
       askAgent,
       effectiveIsMarkdown,
+      effectiveIsJson,
       formatInline,
       runLineCommand,
+      showWordCount,
+      transformWholeDoc,
     ],
   );
 
