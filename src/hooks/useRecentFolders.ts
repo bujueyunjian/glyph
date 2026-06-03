@@ -5,10 +5,10 @@ import { useTranslation } from "react-i18next";
 import { pushRecent } from "@/utils/recentList";
 import { readJson, writeJson } from "@/utils/storage";
 
-const STORAGE_KEY = "glyph.recentFiles";
-const MAX_RECENT = 12;
+const STORAGE_KEY = "glyph.recentFolders";
+const MAX_RECENT = 10;
 
-// 启动时读到坏 JSON 的标记:不静默吞,挂载后响亮 toast(见 utils/storage 两态说明)。
+// 启动时读到坏 JSON 的标记:挂载后响亮 toast,不静默吞(对齐 useRecentFiles)。
 let bootCorrupted = false;
 
 function readStored(): string[] {
@@ -17,31 +17,30 @@ function readStored(): string[] {
   return value ?? [];
 }
 
-// 最近打开文件(localStorage 持久化,去重 + 上限)。新打开置顶。
-export function useRecentFiles() {
+// 最近打开的工作区文件夹(localStorage 持久化,去重 + 上限)。新打开置顶。
+export function useRecentFolders() {
   const { t } = useTranslation();
-  const [recent, setRecent] = useState<string[]>(readStored);
+  const [recentFolders, setRecentFolders] = useState<string[]>(readStored);
 
-  // 记录损坏时响亮告知(已清空,非静默兜底)。
   useEffect(() => {
     if (bootCorrupted) {
       bootCorrupted = false;
-      toast.error(t("storage.recentCorrupted"));
+      toast.error(t("storage.recentFoldersCorrupted"));
     }
   }, [t]);
 
-  const addRecent = useCallback((path: string) => {
-    setRecent((prev) => {
+  const addRecentFolder = useCallback((path: string) => {
+    setRecentFolders((prev) => {
       const next = pushRecent(prev, path, MAX_RECENT);
       writeJson(STORAGE_KEY, next);
       return next;
     });
   }, []);
 
-  const clearRecent = useCallback(() => {
-    setRecent([]);
+  const clearRecentFolders = useCallback(() => {
+    setRecentFolders([]);
     writeJson(STORAGE_KEY, []);
   }, []);
 
-  return { recent, addRecent, clearRecent };
+  return { recentFolders, addRecentFolder, clearRecentFolders };
 }

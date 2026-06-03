@@ -13,6 +13,9 @@ interface MenuBarProps {
   recentFiles: string[];
   onOpenRecent: (path: string) => void;
   onClearRecent: () => void;
+  recentFolders: string[];
+  onOpenRecentFolder: (path: string) => void;
+  onClearRecentFolders: () => void;
   hasFolder: boolean;
   onCloseFolder: () => void;
   onSave: () => void;
@@ -52,6 +55,9 @@ export function MenuBar(props: MenuBarProps) {
     recentFiles,
     onOpenRecent,
     onClearRecent,
+    recentFolders,
+    onOpenRecentFolder,
+    onClearRecentFolders,
     hasFolder,
     onCloseFolder,
     onSave,
@@ -121,6 +127,46 @@ export function MenuBar(props: MenuBarProps) {
                       <Menubar.Item
                         className={itemClass}
                         onSelect={onClearRecent}
+                      >
+                        {t("file.clearRecent")}
+                      </Menubar.Item>
+                    </>
+                  ) : null}
+                </Menubar.SubContent>
+              </Menubar.Portal>
+            </Menubar.Sub>
+
+            <Menubar.Sub>
+              <Menubar.SubTrigger className={itemClass}>
+                {t("file.recentFolders")}
+                <ChevronRight className="size-3.5" />
+              </Menubar.SubTrigger>
+              <Menubar.Portal>
+                <Menubar.SubContent className={contentClass} sideOffset={2}>
+                  {recentFolders.length === 0 ? (
+                    <Menubar.Item className={itemClass} disabled>
+                      {t("file.recentEmpty")}
+                    </Menubar.Item>
+                  ) : (
+                    recentFolders.map((path) => (
+                      <Menubar.Item
+                        key={path}
+                        className={itemClass}
+                        title={path}
+                        onSelect={() => onOpenRecentFolder(path)}
+                      >
+                        <span className="max-w-[220px] truncate">
+                          {getFileName(path)}
+                        </span>
+                      </Menubar.Item>
+                    ))
+                  )}
+                  {recentFolders.length > 0 ? (
+                    <>
+                      <Menubar.Separator className={separatorClass} />
+                      <Menubar.Item
+                        className={itemClass}
+                        onSelect={onClearRecentFolders}
                       >
                         {t("file.clearRecent")}
                       </Menubar.Item>

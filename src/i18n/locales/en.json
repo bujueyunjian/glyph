@@ -97,7 +97,8 @@
     "open": "Open",
     "openFolder": "Open Folder",
     "recent": "Open Recent",
-    "recentEmpty": "No recent files",
+    "recentEmpty": "No recent items",
+    "recentFolders": "Recent Folders",
     "clearRecent": "Clear Recent",
     "closeFolder": "Close Folder",
     "save": "Save",
@@ -135,6 +136,7 @@
   "storage": {
     "settingsCorrupted": "Settings data is corrupted; reset to defaults",
     "recentCorrupted": "Recent files list is corrupted; cleared",
+    "recentFoldersCorrupted": "Recent folders list is corrupted; cleared",
     "sessionCorrupted": "Last session data is corrupted; ignored"
   }
 }

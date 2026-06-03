@@ -33,6 +33,7 @@ import { TabBar } from "@/components/workbench/TabBar";
 import { WorkbenchLayout } from "@/components/workbench/WorkbenchLayout";
 import { useEditorTabs } from "@/hooks/useEditorTabs";
 import { useRecentFiles } from "@/hooks/useRecentFiles";
+import { useRecentFolders } from "@/hooks/useRecentFolders";
 import { useSession } from "@/hooks/useSession";
 import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/hooks/useTheme";
@@ -93,6 +94,8 @@ function App() {
   }, []);
 
   const { recent, addRecent, clearRecent } = useRecentFiles();
+  const { recentFolders, addRecentFolder, clearRecentFolders } =
+    useRecentFolders();
   const { settings, updateSetting, resetSettings } = useSettings();
   const {
     tabs,
@@ -108,7 +111,8 @@ function App() {
     reorderTabs,
   } = useEditorTabs(getContent, addRecent);
   const { themes, activeTheme, setTheme } = useTheme();
-  const { rootPath, openFolder, closeFolder } = useWorkspace();
+  const { rootPath, openFolder, openFolderPath, closeFolder } =
+    useWorkspace(addRecentFolder);
   const { loadSession, saveSession } = useSession();
   // 镜像未保存状态,供窗口关闭处理器读取最新值。
   const hasDirtyRef = useRef(false);
@@ -831,6 +835,9 @@ function App() {
             recentFiles={recent}
             onOpenRecent={openInFocused}
             onClearRecent={clearRecent}
+            recentFolders={recentFolders}
+            onOpenRecentFolder={openFolderPath}
+            onClearRecentFolders={clearRecentFolders}
             hasFolder={!!rootPath}
             onCloseFolder={closeFolder}
             onSave={doSave}

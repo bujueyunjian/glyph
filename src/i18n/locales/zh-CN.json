@@ -97,7 +97,8 @@
     "open": "打开",
     "openFolder": "打开文件夹",
     "recent": "最近打开",
-    "recentEmpty": "无最近文件",
+    "recentEmpty": "无最近记录",
+    "recentFolders": "最近文件夹",
     "clearRecent": "清除最近记录",
     "closeFolder": "关闭文件夹",
     "save": "保存",
@@ -135,6 +136,7 @@
   "storage": {
     "settingsCorrupted": "设置数据损坏,已恢复默认",
     "recentCorrupted": "最近文件记录损坏,已清空",
+    "recentFoldersCorrupted": "最近文件夹记录损坏,已清空",
     "sessionCorrupted": "上次会话数据损坏,已忽略"
   }
 }
