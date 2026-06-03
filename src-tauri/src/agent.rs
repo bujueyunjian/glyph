@@ -2,6 +2,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, Command, Stdio};
 
 use serde_json::{json, Value};
+use tauri::{AppHandle, Emitter};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -165,6 +166,122 @@ pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String
     let outcome = agent_turn(&mut reader, &mut stdin, &prompt, &mut answer);
     kill(&mut child);
     outcome.map(|()| answer)
+}
+
+// 读 ndjson 直到 id 响应,途中把 agent 文本块经事件 `agent://chunk` 流式推送 UI。
+fn pump_emit<R: BufRead>(
+    app: &AppHandle,
+    reader: &mut R,
+    stdin: &mut ChildStdin,
+    target_id: u64,
+) -> Result<(), String> {
+    let mut line = String::new();
+    loop {
+        line.clear();
+        let n = reader
+            .read_line(&mut line)
+            .map_err(|e| format!("读取 agent 失败: {e}"))?;
+        if n == 0 {
+            return Err("agent 在响应前结束了".to_string());
+        }
+        let Ok(message) = serde_json::from_str::<Value>(line.trim()) else {
+            continue;
+        };
+        if let Some(result) = response_for(&message, target_id) {
+            return result.map(|_| ());
+        }
+        if let Some(text) = extract_agent_text(&message) {
+            let _ = app.emit("agent://chunk", text);
+        } else if message.get("method").is_some() {
+            if let Some(req_id) = message.get("id").and_then(Value::as_u64) {
+                let err = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32601, "message": "unsupported in Glyph v1" } });
+                write_line(stdin, &err.to_string())?;
+            }
+        }
+    }
+}
+
+fn stream_turn<R: BufRead>(
+    app: &AppHandle,
+    reader: &mut R,
+    stdin: &mut ChildStdin,
+    prompt: &str,
+) -> Result<(), String> {
+    let mut scratch = String::new();
+    write_line(stdin, &rpc_request(0, "initialize", client_init_params()))?;
+    pump_until(reader, stdin, 0, &mut scratch)?;
+
+    let cwd = std::env::current_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default();
+    write_line(
+        stdin,
+        &rpc_request(1, "session/new", json!({ "cwd": cwd, "mcpServers": [] })),
+    )?;
+    let session = pump_until(reader, stdin, 1, &mut scratch)?;
+    let session_id = session
+        .get("sessionId")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "session/new 未返回 sessionId".to_string())?;
+
+    write_line(
+        stdin,
+        &rpc_request(
+            2,
+            "session/prompt",
+            json!({ "sessionId": session_id, "prompt": [{ "type": "text", "text": prompt }] }),
+        ),
+    )?;
+    pump_emit(app, reader, stdin, 2)
+}
+
+fn run_stream(app: &AppHandle, agent_cmd: &str, prompt: &str) -> Result<(), String> {
+    let mut parts = agent_cmd.split_whitespace();
+    let program = parts
+        .next()
+        .ok_or_else(|| "agent 命令为空".to_string())?
+        .to_string();
+    let args: Vec<String> = parts.map(str::to_string).collect();
+
+    let mut command = Command::new(&program);
+    command
+        .args(&args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("启动 agent 失败 ({program}): {e}"))?;
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| "无法获取 agent stdin".to_string())?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "无法获取 agent stdout".to_string())?;
+    let mut reader = BufReader::new(stdout);
+
+    let outcome = stream_turn(app, &mut reader, &mut stdin, prompt);
+    kill(&mut child);
+    outcome
+}
+
+// 流式向 ACP agent 发 prompt:后台线程跑会话,文本经 `agent://chunk` 推送,
+// 结束发 `agent://done`,出错发 `agent://error`。命令即时返回。
+#[tauri::command]
+pub fn agent_stream(app: AppHandle, agent_cmd: String, prompt: String) {
+    std::thread::spawn(move || match run_stream(&app, &agent_cmd, &prompt) {
+        Ok(()) => {
+            let _ = app.emit("agent://done", ());
+        }
+        Err(e) => {
+            let _ = app.emit("agent://error", e);
+        }
+    });
 }
 
 #[cfg(test)]

@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getAppInfo } from "@/api/appApi";
 import { createDir, createFile, deletePath, renamePath } from "@/api/fileApi";
 import { watchWorkspace } from "@/api/workspaceApi";
-import { agentOneshot } from "@/api/agentApi";
+import { agentStream } from "@/api/agentApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
@@ -111,6 +111,42 @@ function App() {
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
   const [agentResult, setAgentResult] = useState<string | null>(null);
+  // 流式 agent 会话的监听解绑函数;关闭对话框或开新会话时调用,避免监听泄漏。
+  const agentCleanupRef = useRef<(() => void) | null>(null);
+  const closeAgentResult = useCallback(() => {
+    agentCleanupRef.current?.();
+    agentCleanupRef.current = null;
+    setAgentResult(null);
+  }, []);
+
+  // 向 ACP agent 流式提问:响应分块经事件回流,逐块追加到只读对话框(打字热路径之外)。
+  const askAgent = useCallback(
+    (agentCmd: string, prompt: string) => {
+      agentCleanupRef.current?.();
+      setAgentResult(""); // 开空对话框,等待流式分块
+      agentStream(agentCmd, prompt, {
+        onChunk: (text) => setAgentResult((prev) => (prev ?? "") + text),
+        onDone: () => {
+          agentCleanupRef.current?.();
+          agentCleanupRef.current = null;
+        },
+        onError: (msg) => {
+          agentCleanupRef.current?.();
+          agentCleanupRef.current = null;
+          setAgentResult(null);
+          toast.error(t("agent.failed", { msg }));
+        },
+      })
+        .then((cleanup) => {
+          agentCleanupRef.current = cleanup;
+        })
+        .catch((err) => {
+          setAgentResult(null);
+          toast.error(t("agent.failed", { msg: (err as Error).message }));
+        });
+    },
+    [t],
+  );
   const [splitPath, setSplitPath] = useState<string | null>(null);
   const [focusedPane, setFocusedPaneState] = useState<"main" | "split">("main");
   const setFocusedPane = useCallback((pane: "main" | "split") => {
@@ -402,14 +438,7 @@ function App() {
             onSubmit: (v) => {
               const prompt = v.prompt?.trim();
               if (!prompt) return;
-              toast(t("agent.running"));
-              agentOneshot(v.agent?.trim() || "claude-agent-acp", prompt)
-                .then((res) => setAgentResult(res))
-                .catch((err) =>
-                  toast.error(
-                    t("agent.failed", { msg: (err as Error).message }),
-                  ),
-                );
+              askAgent(v.agent?.trim() || "claude-agent-acp", prompt);
             },
           }),
       },
@@ -501,6 +530,7 @@ function App() {
       setTheme,
       transformLines,
       toggleSplit,
+      askAgent,
     ],
   );
 
@@ -812,10 +842,7 @@ function App() {
         rootPath={rootPath}
         onOpenHit={openHit}
       />
-      <AgentResultDialog
-        result={agentResult}
-        onClose={() => setAgentResult(null)}
-      />
+      <AgentResultDialog result={agentResult} onClose={closeAgentResult} />
       <SettingsPanel
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

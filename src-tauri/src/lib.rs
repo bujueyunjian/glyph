@@ -3,7 +3,7 @@ mod commands;
 mod proc;
 mod watch;
 
-use agent::agent_oneshot;
+use agent::{agent_oneshot, agent_stream};
 use commands::app::get_app_info;
 use commands::file::{
     create_dir, create_file, delete_path, list_dir, list_files, open_file, rename_path, save_file,
@@ -36,7 +36,8 @@ pub fn run() {
             proc_kill,
             watch_workspace,
             unwatch_workspace,
-            agent_oneshot
+            agent_oneshot,
+            agent_stream
         ])
         .run(tauri::generate_context!())
         .expect("Glyph 启动失败");
