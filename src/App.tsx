@@ -69,13 +69,14 @@ function App() {
   const { t } = useTranslation();
   const [appVersion, setAppVersion] = useState<string>();
 
-  // 每个标签一个 CodeMirror 实例的 ref;保存时按 path 读对应实例的文档。
+  // CodeMirror 实例 ref:主面板与分屏各一套(按 path)。读取按聚焦面板取。
   const editorRefs = useRef<Map<string, ReactCodeMirrorRef | null>>(new Map());
-  const getContent = useCallback(
-    (path: string) =>
-      editorRefs.current.get(path)?.view?.state.doc.toString() ?? "",
-    [],
-  );
+  const splitRefs = useRef<Map<string, ReactCodeMirrorRef | null>>(new Map());
+  const focusedPaneRef = useRef<"main" | "split">("main");
+  const getContent = useCallback((path: string) => {
+    const refs = focusedPaneRef.current === "split" ? splitRefs : editorRefs;
+    return refs.current.get(path)?.view?.state.doc.toString() ?? "";
+  }, []);
 
   const { recent, addRecent, clearRecent } = useRecentFiles();
   const { settings, updateSetting, resetSettings } = useSettings();
@@ -110,6 +111,54 @@ function App() {
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
   const [agentResult, setAgentResult] = useState<string | null>(null);
+  const [splitPath, setSplitPath] = useState<string | null>(null);
+  const [focusedPane, setFocusedPaneState] = useState<"main" | "split">("main");
+  const setFocusedPane = useCallback((pane: "main" | "split") => {
+    focusedPaneRef.current = pane;
+    setFocusedPaneState(pane);
+  }, []);
+  // 聚焦面板的当前文件(save/undo/find/变换作用对象)。
+  const effectiveActive = focusedPane === "split" ? splitPath : activePath;
+
+  const doSave = useCallback(() => {
+    if (effectiveActive) void save(effectiveActive);
+  }, [effectiveActive, save]);
+  const doSaveAs = useCallback(() => {
+    if (effectiveActive) void saveAs(effectiveActive);
+  }, [effectiveActive, saveAs]);
+
+  // 打开文件到聚焦面板:分屏聚焦则开进分屏(不动主面板激活),否则开进主面板。
+  const openInFocused = useCallback(
+    (path: string) => {
+      if (focusedPaneRef.current === "split") {
+        void openPath(path, false);
+        setSplitPath(path);
+      } else {
+        void openPath(path);
+      }
+    },
+    [openPath],
+  );
+
+  // 切换分屏:已开则关(回主面板),否则把当前文件开进分屏。
+  const toggleSplit = useCallback(() => {
+    setSplitPath((cur) => {
+      if (cur !== null) {
+        setFocusedPane("main");
+        return null;
+      }
+      return activePath;
+    });
+  }, [activePath, setFocusedPane]);
+
+  // 关闭标签并同步:若该文件正在分屏显示,一并关掉分屏视图。
+  const closeTabSynced = useCallback(
+    (path: string) => {
+      closeTab(path);
+      setSplitPath((cur) => (cur === path ? null : cur));
+    },
+    [closeTab],
+  );
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -130,10 +179,11 @@ function App() {
   );
 
   // 编辑命令作用于激活编辑器;动态 import 避免把 CodeMirror 拉回首屏。
-  const activeView = useCallback(
-    () => (activePath ? editorRefs.current.get(activePath)?.view : undefined),
-    [activePath],
-  );
+  const activeView = useCallback(() => {
+    const refs = focusedPane === "split" ? splitRefs : editorRefs;
+    const path = focusedPane === "split" ? splitPath : activePath;
+    return path ? refs.current.get(path)?.view : undefined;
+  }, [focusedPane, splitPath, activePath]);
   const editorUndo = useCallback(async () => {
     const view = activeView();
     if (view) (await import("@codemirror/commands")).undo(view);
@@ -297,14 +347,14 @@ function App() {
         title: t("file.save"),
         group: t("menu.file"),
         shortcut: "Ctrl/⌘ S",
-        perform: save,
+        perform: doSave,
       },
       {
         id: "file.saveAs",
         title: t("file.saveAs"),
         group: t("menu.file"),
         shortcut: "Ctrl/⌘ ⇧ S",
-        perform: saveAs,
+        perform: doSaveAs,
       },
       {
         id: "view.settings",
@@ -326,6 +376,13 @@ function App() {
         group: t("menu.view"),
         shortcut: "Ctrl/⌘ ⇧ V",
         perform: () => setPreviewOpen((prev) => !prev),
+      },
+      {
+        id: "view.split",
+        title: t("view.split"),
+        group: t("menu.view"),
+        shortcut: "Ctrl/⌘ \\",
+        perform: toggleSplit,
       },
       {
         id: "agent.ask",
@@ -434,7 +491,17 @@ function App() {
         perform: () => setTheme(th.id),
       })),
     ],
-    [t, open, openFolder, save, saveAs, themes, setTheme, transformLines],
+    [
+      t,
+      open,
+      openFolder,
+      doSave,
+      doSaveAs,
+      themes,
+      setTheme,
+      transformLines,
+      toggleSplit,
+    ],
   );
 
   useEffect(() => {
@@ -475,13 +542,21 @@ function App() {
         void open();
       } else if (key === "s") {
         event.preventDefault();
-        if (event.shiftKey) void saveAs();
-        else void save();
+        if (event.shiftKey) doSaveAs();
+        else doSave();
       } else if (key === "w") {
-        if (activePath) {
+        if (effectiveActive) {
           event.preventDefault();
-          closeTab(activePath);
+          if (focusedPane === "split") {
+            setSplitPath(null);
+            setFocusedPane("main");
+          } else {
+            closeTabSynced(effectiveActive);
+          }
         }
+      } else if (key === "\\") {
+        event.preventDefault();
+        toggleSplit();
       } else if (key === "b") {
         event.preventDefault();
         setSidebarVisible((prev) => !prev);
@@ -492,7 +567,17 @@ function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, save, saveAs, closeTab, activePath]);
+  }, [
+    open,
+    doSave,
+    doSaveAs,
+    closeTabSynced,
+    activePath,
+    effectiveActive,
+    focusedPane,
+    toggleSplit,
+    setFocusedPane,
+  ]);
 
   // 会话恢复:启动时一次,打开上次会话的文件(缺=空态;坏 JSON 已在 loadSession 响亮报错)。
   const restoreStarted = useRef(false);
@@ -597,8 +682,8 @@ function App() {
             <FileTree
               key={treeVersion}
               rootPath={rootPath}
-              activePath={activePath ?? undefined}
-              onOpenFile={openPath}
+              activePath={effectiveActive ?? undefined}
+              onOpenFile={openInFocused}
               actions={treeActions}
             />
           ) : undefined
@@ -608,13 +693,13 @@ function App() {
             onOpen={open}
             onOpenFolder={openFolder}
             recentFiles={recent}
-            onOpenRecent={openPath}
+            onOpenRecent={openInFocused}
             onClearRecent={clearRecent}
             hasFolder={!!rootPath}
             onCloseFolder={closeFolder}
-            onSave={save}
-            onSaveAs={saveAs}
-            canSave={!!activePath}
+            onSave={doSave}
+            onSaveAs={doSaveAs}
+            canSave={!!effectiveActive}
             onUndo={editorUndo}
             onRedo={editorRedo}
             onFind={editorFind}
@@ -632,14 +717,19 @@ function App() {
           {tabs.length > 0 ? (
             <TabBar
               tabs={tabs}
-              activePath={activePath}
-              onActivate={setActive}
-              onClose={closeTab}
+              activePath={effectiveActive}
+              onActivate={(p) =>
+                focusedPane === "split" ? setSplitPath(p) : setActive(p)
+              }
+              onClose={closeTabSynced}
               onReorder={reorderTabs}
             />
           ) : null}
           <div className="flex min-h-0 flex-1">
-            <div className="min-w-0 flex-1">
+            <div
+              className="min-w-0 flex-1"
+              onMouseDownCapture={() => setFocusedPane("main")}
+            >
               {tabs.length > 0 ? (
                 <Suspense fallback={<div className="h-full w-full" />}>
                   {tabs.map((tab) => (
@@ -669,6 +759,30 @@ function App() {
                 <EmptyState />
               )}
             </div>
+            {splitPath ? (
+              <div
+                className="min-w-0 flex-1 border-l border-[var(--color-border)]"
+                onMouseDownCapture={() => setFocusedPane("split")}
+              >
+                <Suspense fallback={<div className="h-full w-full" />}>
+                  <CodeEditor
+                    key={splitPath}
+                    ref={(instance) => {
+                      if (instance) splitRefs.current.set(splitPath, instance);
+                      else splitRefs.current.delete(splitPath);
+                    }}
+                    initialValue={
+                      tabs.find((tb) => tb.path === splitPath)
+                        ?.initialContent ?? ""
+                    }
+                    extension={getFileExtension(splitPath)}
+                    themeKind={activeTheme.kind}
+                    settings={settings}
+                    onDocChange={() => handleDocChange(splitPath)}
+                  />
+                </Suspense>
+              </div>
+            ) : null}
             {previewOpen && activeIsMarkdown ? (
               <div className="min-w-0 flex-1 border-l border-[var(--color-border)]">
                 <Suspense fallback={<div className="h-full w-full" />}>
@@ -689,7 +803,7 @@ function App() {
         open={quickOpenOpen}
         onOpenChange={setQuickOpenOpen}
         rootPath={rootPath}
-        onOpenFile={openPath}
+        onOpenFile={openInFocused}
         onGoToLine={goToLine}
       />
       <SearchPanel

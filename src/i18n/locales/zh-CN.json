@@ -36,7 +36,8 @@
   },
   "view": {
     "showSidebar": "显示侧栏",
-    "hideSidebar": "隐藏侧栏"
+    "hideSidebar": "隐藏侧栏",
+    "split": "切换分屏"
   },
   "help": {
     "about": "关于 Glyph"

@@ -36,7 +36,8 @@
   },
   "view": {
     "showSidebar": "Show Sidebar",
-    "hideSidebar": "Hide Sidebar"
+    "hideSidebar": "Hide Sidebar",
+    "split": "Toggle Split"
   },
   "help": {
     "about": "About Glyph"

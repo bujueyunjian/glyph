@@ -42,9 +42,9 @@ export function useEditorTabs(
 
   // 按已知路径打开:已打开则仅激活,否则读盘 + 新建标签 + 激活。
   const openPath = useCallback(
-    async (path: string) => {
+    async (path: string, activateTab = true) => {
       if (tabsRef.current.some((tab) => tab.path === path)) {
-        activate(path);
+        if (activateTab) activate(path);
         onFileOpened?.(path);
         return;
       }
@@ -54,7 +54,7 @@ export function useEditorTabs(
           ...tabsRef.current,
           { path, initialContent: content, isDirty: false },
         ]);
-        activate(path);
+        if (activateTab) activate(path);
         onFileOpened?.(path);
       } catch (err) {
         toast.error(t("file.openFailed", { msg: (err as Error).message }));
@@ -148,44 +148,48 @@ export function useEditorTabs(
     [writeTabs, activate, getContent, t, restoreTab],
   );
 
-  const save = useCallback(async () => {
-    const path = activePathRef.current;
-    if (!path) return;
-    try {
-      await saveFile(path, getContent(path));
-      writeTabs(
-        tabsRef.current.map((tab) =>
-          tab.path === path ? { ...tab, isDirty: false } : tab,
-        ),
-      );
-      toast.success(t("file.saved"));
-    } catch (err) {
-      toast.error(t("file.saveFailed", { msg: (err as Error).message }));
-    }
-  }, [getContent, writeTabs, t]);
+  const save = useCallback(
+    async (path: string) => {
+      if (!path) return;
+      try {
+        await saveFile(path, getContent(path));
+        writeTabs(
+          tabsRef.current.map((tab) =>
+            tab.path === path ? { ...tab, isDirty: false } : tab,
+          ),
+        );
+        toast.success(t("file.saved"));
+      } catch (err) {
+        toast.error(t("file.saveFailed", { msg: (err as Error).message }));
+      }
+    },
+    [getContent, writeTabs, t],
+  );
 
-  const saveAs = useCallback(async () => {
-    const path = activePathRef.current;
-    if (!path) return;
-    const picked = await saveDialog({ defaultPath: path });
-    if (typeof picked !== "string") return; // 用户取消
-    const content = getContent(path);
-    try {
-      await saveFile(picked, content);
-      // 改路径 = 改 key 重挂载,内容用 initialContent 保留。
-      writeTabs(
-        tabsRef.current.map((tab) =>
-          tab.path === path
-            ? { path: picked, initialContent: content, isDirty: false }
-            : tab,
-        ),
-      );
-      activate(picked);
-      toast.success(t("file.saved"));
-    } catch (err) {
-      toast.error(t("file.saveFailed", { msg: (err as Error).message }));
-    }
-  }, [getContent, writeTabs, activate, t]);
+  const saveAs = useCallback(
+    async (path: string) => {
+      if (!path) return;
+      const picked = await saveDialog({ defaultPath: path });
+      if (typeof picked !== "string") return; // 用户取消
+      const content = getContent(path);
+      try {
+        await saveFile(picked, content);
+        // 改路径 = 改 key 重挂载,内容用 initialContent 保留。
+        writeTabs(
+          tabsRef.current.map((tab) =>
+            tab.path === path
+              ? { path: picked, initialContent: content, isDirty: false }
+              : tab,
+          ),
+        );
+        activate(picked);
+        toast.success(t("file.saved"));
+      } catch (err) {
+        toast.error(t("file.saveFailed", { msg: (err as Error).message }));
+      }
+    },
+    [getContent, writeTabs, activate, t],
+  );
 
   return {
     tabs,
