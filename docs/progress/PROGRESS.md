@@ -68,7 +68,7 @@
 - ✅ [0035] 启动重开上次工作区文件夹（会话连续性）
 
 **剩余（硬卡外部资源/显示环境，盲做会违背"不欺骗/开箱即美"高线）**：
-- ⛔ **LSP 前端桥接 + 端到端**：传输层(0032)已 cargo 测;`@codemirror/lsp-client` 桥接 + initialize 握手 + 补全/诊断需**真实语言服务器**(rust-analyzer 等)+ 运行 app 才能验证(协议行为编译查不出)。
+- 🟡 **LSP**：传输层(0032)+ **initialize 握手已对真实 rust-analyzer 端到端验证(0038,headless 纯 stdio)**。架构定为「协议在 Rust、前端只渲染」(铁律)。剩余:didOpen/completion/hover/diagnostics 路由 + 前端补全源/诊断标记渲染(渲染部分需显示验观感,协议部分仍可 headless 验)。
 - ⛔ **M4 端到端**：一次性+流式(0024/0027)已落地;真实对话/权限/diff 审查需本地装 **ACP agent**(`claude-agent-acp`)+ 运行 app 验握手。
 - ⛔ **行内 Live Preview 进阶**（Obsidian 式光标离行隐藏标记）：着重渲染版(0031)已出;隐藏标记需 replace 装饰 + 光标感知 + **显示环境调视觉**。
 - ⛔ **输入→上屏 端到端延迟实测**：文档模型门禁(0030)已守;绘制层需**显示环境** + Playwright/tauri-driver。
