@@ -1,0 +1,32 @@
+src/App.tsx
+  s_82120e9b499222::t_645acf86c7aa90 546
+  s_82120e9b499222::t_c2278349c6e2f1 593-594
+  s_82120e9b499222::t_fa5241dbae3245 101
+  s_82120e9b499222::t_b0395785b549d3 406-411
+  s_82120e9b499222::t_1916d5da9205c8 623
+  s_82120e9b499222::t_4a69affb64e0c8 76-77,79-87
+docs/progress/tasks/0028-save-all.md
+  s_82120e9b499222::t_03a8dbbc0309bd 1-20
+src/i18n/locales/en.json
+  s_82120e9b499222::t_de96ad3f9d222b 93,95
+src/hooks/useEditorTabs.ts
+  s_82120e9b499222::t_0827a13b63bfdf 194-212,222
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_bcbb6c4ddb897c 93,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a86fdc3ecf6e6fdad2d0ccf30cbbdc48f4695107",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
