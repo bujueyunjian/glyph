@@ -1,0 +1,72 @@
+src/hooks/useSettings.ts
+  s_82120e9b499222::t_1561682362caa5 1-3,6,10-11,13-17,22,25-32,37,46
+src-tauri/capabilities/default.json
+  s_82120e9b499222::t_38078c743e915b 6-11
+src/hooks/useSession.ts
+  s_82120e9b499222::t_28b52cbaaf3b39 29-38
+  s_82120e9b499222::t_6667b06eb2500f 12-13
+  s_82120e9b499222::t_8e7038953d3862 1-11,14-28,39-44
+src-tauri/src/commands/file.rs
+  s_82120e9b499222::t_668d97765cad45 14-15,18-26,28-32
+  s_82120e9b499222::t_936529fe0423f0 27
+src/components/workbench/TabBar.tsx
+  s_82120e9b499222::t_59eb3af90575ba 40
+  s_82120e9b499222::t_e6d83ad3ef9aae 2
+  s_82120e9b499222::t_c40eed1ecc5bdb 16
+src/i18n/locales/en.json
+  s_82120e9b499222::t_fd3e8783ae3c6f 57
+  s_82120e9b499222::t_0efcf739a90cbc 75-77
+  s_82120e9b499222::t_d61bbe033ae608 78-79
+  s_82120e9b499222::t_db7188afc61969 58-59
+  s_82120e9b499222::t_9c326227b0298e 6-9
+src/hooks/useRecentFiles.ts
+  s_82120e9b499222::t_48cb8fdd7a7b2e 1-5,10-11,13-16,21,24-31,38,45
+src/components/editor/CodeEditor.tsx
+  s_82120e9b499222::t_773187ff1225bd 47-55
+  s_82120e9b499222::t_182c625e7f451a 1
+  s_82120e9b499222::t_5b1c7b517ca56d 16-17
+  s_82120e9b499222::t_63e530a4fbcbaa 35-42
+  s_82120e9b499222::t_0881f1616e3571 103
+src/App.tsx
+  s_82120e9b499222::t_eb62b1e28ebe46 253,256-276
+  s_82120e9b499222::t_1eb8ac59d33f37 219,236,239-240,243-244,248,251-252,254-255,277
+  s_82120e9b499222::t_83f731b8cf6aaa 212-218,220-235,237-238,245-247,249-250,278
+  s_82120e9b499222::t_63e530a4fbcbaa 241-242
+  s_82120e9b499222::t_6a046d0ad43a40 68-72
+  s_82120e9b499222::t_8134af4c0d5c00 26
+  s_82120e9b499222::t_56869ab9b183d9 11
+  s_82120e9b499222::t_b45f02438bf46a 67
+  s_82120e9b499222::t_275155b591d0ae 343
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_7bbf80e5eb6d59 75-77
+  s_82120e9b499222::t_1ff79f3dbedd74 78-79
+  s_82120e9b499222::t_36c77c17f3264a 57
+  s_82120e9b499222::t_e7742b6538151f 58-59
+  s_82120e9b499222::t_67d8523f774d50 6-9
+src/styles.css
+  s_82120e9b499222::t_8e0e8e7862605e 37-44
+src/components/workbench/EmptyState.tsx
+  s_82120e9b499222::t_b5f565a20689b7 29-31
+  s_82120e9b499222::t_25d7fc52b5d7b3 4-11,15,23-28,32-37
+src/utils/storage.ts
+  s_82120e9b499222::t_cfe83ca4a362be 1-30
+src/hooks/useEditorTabs.ts
+  s_82120e9b499222::t_3d63c0915f22c7 10
+  s_82120e9b499222::t_9af47edc901a05 93-112,118-120,128-137,139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "40dfd54536cbe83db7d5c3c18cb7f8a5b903b67e",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
