@@ -62,3 +62,6 @@ jobs:
 
       - name: Build frontend
         run: pnpm build
+
+      - name: Perf budget (首屏体积红线)
+        run: pnpm perf:budget
