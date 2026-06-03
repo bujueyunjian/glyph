@@ -1,0 +1,34 @@
+src/styles.css
+  s_82120e9b499222::t_0e71bc8e3f7039 110-188
+docs/progress/tasks/0025-markdown-preview-pane.md
+  s_82120e9b499222::t_ec19ddd1dd741b 1-47
+src/i18n/locales/en.json
+  s_82120e9b499222::t_64d30b4f0e1923 66-68
+src/App.tsx
+  s_82120e9b499222::t_fb6b5ff0c30dcb 320-325
+  s_82120e9b499222::t_e7706b53c4bee1 59-65
+  s_82120e9b499222::t_ed43a55fa0d8e0 607-644
+  s_82120e9b499222::t_78229bf11725d5 106-108
+  s_82120e9b499222::t_f01230c981778c 193-215
+  s_82120e9b499222::t_b664473830261c 437-439
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_f35da9225f39c0 66-68
+src/components/editor/MarkdownPreview.tsx
+  s_82120e9b499222::t_1169db98a1ce54 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e6ac9b43c64f486c0fe20eb86eb2de6168c1415f",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
