@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getAppInfo } from "@/api/appApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
+import { SearchPanel } from "@/components/command/SearchPanel";
 import { FileTree } from "@/components/explorer/FileTree";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import {
@@ -90,6 +91,7 @@ function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [promptReq, setPromptReq] = useState<PromptRequest | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -153,6 +155,27 @@ function App() {
     [activeView],
   );
 
+  // 跨文件搜索命中跳转:打开文件,轮询等编辑器就绪后跳到行(应对懒加载挂载时序)。
+  const openHit = useCallback(
+    (path: string, line: number) => {
+      void openPath(path);
+      let tries = 0;
+      const jump = () => {
+        const view = editorRefs.current.get(path)?.view;
+        if (view) {
+          const target = Math.min(Math.max(line, 1), view.state.doc.lines);
+          const pos = view.state.doc.line(target).from;
+          view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
+          view.focus();
+        } else if (tries++ < 20) {
+          setTimeout(jump, 50);
+        }
+      };
+      setTimeout(jump, 50);
+    },
+    [openPath],
+  );
+
   // 命令面板的命令集:按当前能力构建(文件操作 + 每个主题一条切换)。
   const commands = useMemo<CommandAction[]>(
     () => [
@@ -189,6 +212,13 @@ function App() {
         group: t("menu.view"),
         shortcut: "Ctrl/⌘ ,",
         perform: () => setSettingsOpen(true),
+      },
+      {
+        id: "search.files",
+        title: t("search.title"),
+        group: t("menu.edit"),
+        shortcut: "Ctrl/⌘ ⇧ F",
+        perform: () => setSearchOpen(true),
       },
       {
         id: "textops.trimEnd",
@@ -298,6 +328,9 @@ function App() {
       } else if (key === "p") {
         event.preventDefault();
         setQuickOpenOpen((prev) => !prev);
+      } else if (event.shiftKey && key === "f") {
+        event.preventDefault();
+        setSearchOpen((prev) => !prev);
       } else if (key === "o") {
         event.preventDefault();
         void open();
@@ -480,6 +513,12 @@ function App() {
         rootPath={rootPath}
         onOpenFile={openPath}
         onGoToLine={goToLine}
+      />
+      <SearchPanel
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        rootPath={rootPath}
+        onOpenHit={openHit}
       />
       <SettingsPanel
         open={settingsOpen}

@@ -53,6 +53,16 @@
     "goToLine": "Go to line {{line}}",
     "lineHint": "Enter a line number"
   },
+  "search": {
+    "title": "Search in Files",
+    "placeholder": "Search text in workspace…",
+    "caseSensitive": "Match case",
+    "noFolder": "Open a folder first",
+    "searching": "Searching…",
+    "empty": "No matches",
+    "count": "{{count}} results",
+    "failed": "Search failed: {{msg}}"
+  },
   "workbench": {
     "emptyTitle": "Start editing",
     "emptyHint": "Open a file (Ctrl/Cmd+O), or press the command palette to begin",

@@ -53,6 +53,16 @@
     "goToLine": "前往第 {{line}} 行",
     "lineHint": "输入要跳转的行号"
   },
+  "search": {
+    "title": "跨文件搜索",
+    "placeholder": "搜索工作区内文本…",
+    "caseSensitive": "区分大小写",
+    "noFolder": "请先打开一个文件夹",
+    "searching": "搜索中…",
+    "empty": "无匹配结果",
+    "count": "找到 {{count}} 处",
+    "failed": "搜索失败: {{msg}}"
+  },
   "workbench": {
     "emptyTitle": "开始编辑",
     "emptyHint": "打开一个文件(Ctrl/Cmd+O),或按命令面板开始",
