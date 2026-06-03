@@ -1,0 +1,28 @@
+src-tauri/src/lsp.rs
+  s_82120e9b499222::t_7ea9bdb51fbe6c 70,135
+  s_82120e9b499222::t_910e7156be6d6f 2
+  s_82120e9b499222::t_8b7d240ddbf2af 62-66
+  s_82120e9b499222::t_38cae0a5ee4f22 1,3-61,67-69,71-134,136-216
+src-tauri/src/lib.rs
+  s_82120e9b499222::t_1964f1737b1a7c 25
+  s_82120e9b499222::t_b4d087ba9d3584 43-46
+  s_82120e9b499222::t_37abf751ec837c 3,13
+docs/progress/tasks/0032-lsp-transport-foundation.md
+  s_82120e9b499222::t_3501571d9b5d17 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2b9d8210bc0c5fcfcd654da7966d58254c9b7a2a",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
