@@ -15,9 +15,11 @@ import { useTranslation } from "react-i18next";
 import { getAppInfo } from "@/api/appApi";
 import { createDir, createFile, deletePath, renamePath } from "@/api/fileApi";
 import { watchWorkspace } from "@/api/workspaceApi";
+import { agentOneshot } from "@/api/agentApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
+import { AgentResultDialog } from "@/components/command/AgentResultDialog";
 import { FileTree } from "@/components/explorer/FileTree";
 import type { FileTreeActions } from "@/components/explorer/FileTreeNode";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
@@ -106,6 +108,7 @@ function App() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
+  const [agentResult, setAgentResult] = useState<string | null>(null);
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -322,6 +325,35 @@ function App() {
         group: t("menu.view"),
         shortcut: "Ctrl/⌘ ⇧ V",
         perform: () => setPreviewOpen((prev) => !prev),
+      },
+      {
+        id: "agent.ask",
+        title: t("agent.ask"),
+        group: t("agent.group"),
+        perform: () =>
+          setPromptReq({
+            title: t("agent.ask"),
+            fields: [
+              {
+                key: "agent",
+                label: t("agent.cmdLabel"),
+                defaultValue: "claude-agent-acp",
+              },
+              { key: "prompt", label: t("agent.promptLabel") },
+            ],
+            onSubmit: (v) => {
+              const prompt = v.prompt?.trim();
+              if (!prompt) return;
+              toast(t("agent.running"));
+              agentOneshot(v.agent?.trim() || "claude-agent-acp", prompt)
+                .then((res) => setAgentResult(res))
+                .catch((err) =>
+                  toast.error(
+                    t("agent.failed", { msg: (err as Error).message }),
+                  ),
+                );
+            },
+          }),
       },
       {
         id: "textops.trimEnd",
@@ -663,6 +695,10 @@ function App() {
         onOpenChange={setSearchOpen}
         rootPath={rootPath}
         onOpenHit={openHit}
+      />
+      <AgentResultDialog
+        result={agentResult}
+        onClose={() => setAgentResult(null)}
       />
       <SettingsPanel
         open={settingsOpen}

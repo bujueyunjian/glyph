@@ -66,6 +66,15 @@
   "preview": {
     "title": "Markdown 预览"
   },
+  "agent": {
+    "group": "AI",
+    "ask": "向 Agent 提问(实验)",
+    "cmdLabel": "Agent 命令",
+    "promptLabel": "提问",
+    "running": "正在询问 agent…",
+    "failed": "agent 调用失败: {{msg}}",
+    "resultTitle": "Agent 响应"
+  },
   "workbench": {
     "emptyTitle": "开始编辑",
     "emptyHint": "打开一个文件(Ctrl/Cmd+O),或按命令面板开始",

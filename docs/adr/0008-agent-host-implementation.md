@@ -43,3 +43,7 @@ ADR-0004 锁定 Glyph 做 **ACP 本地宿主 + MCP 客户端**。M4 落地前，
 - ⚠️ **端到端验证需安装真实 agent CLI（如 Claude Code）+ 运行 app**——headless/CI 编译可验，行为验证需显示环境 + 凭据。
 - ⚠️ tokio 引入会增体积/编译时间 → 评估是否必要（rmcp 依赖 tokio；ACP client 可能也异步）。
 - 📝 diff 审查 UI、权限提示 UI、provider/agent 配置的具体形态随实现细化。
+
+## v1 实现说明（2026-06-03，见任务 [0024](../progress/tasks/0024-acp-mcp-client-foundation.md)）
+
+首刀因**「轻」SLO** 暂未用官方 crate:官方 `agent-client-protocol` 重度依赖 **tokio**,会显著增体积/编译时间(本 ADR Consequences 已预警)。故 v1 走**轻量自研最小 ACP 客户端**(仅 `serde_json`,复用 proc.rs std 子进程,ndjson JSON-RPC),一次性 prompt 取文本,纯消息层 cargo 可测。**待功能复杂化(流式会话保活/fs/terminal/权限/MCP)再评估切官方 crate**——本 ADR 的「用官方 crate」决定不变,只是 v1 先以轻量实现验证形态。
