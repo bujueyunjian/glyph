@@ -1,0 +1,44 @@
+src/i18n/locales/en.json
+  s_82120e9b499222::t_ab520951032d47 39-40
+src/App.tsx
+  s_82120e9b499222::t_3b86cfad0500d1 554
+  s_82120e9b499222::t_a7bad14ed0ee80 696,700-702
+  s_82120e9b499222::t_009f07a750fc8e 685-686
+  s_82120e9b499222::t_d0011ae01c6884 72,74-79
+  s_82120e9b499222::t_a2f503f2d05628 570-580
+  s_82120e9b499222::t_389973af243551 762-785
+  s_82120e9b499222::t_7f2add03d588a3 806
+  s_82120e9b499222::t_340ae794f5efc1 114-161
+  s_82120e9b499222::t_153de58ba0f499 720-724
+  s_82120e9b499222::t_a088c1250d4c48 545-546,548,550-553,555,557-559
+  s_82120e9b499222::t_7d58905b02e914 182-186
+  s_82120e9b499222::t_c04a1062bd1670 381-386
+  s_82120e9b499222::t_8f9ac5101cbfad 350,357
+  s_82120e9b499222::t_8d26a5a824639d 729-732
+  s_82120e9b499222::t_fe54dd4b24a15f 494-504
+src/hooks/useEditorTabs.ts
+  s_82120e9b499222::t_0410dc218428a5 151-155
+  s_82120e9b499222::t_edaaf4a4d49929 45,47,57
+  ai_agent 156-167,173-192
+  s_82120e9b499222::t_e9f91468935d3f 169-172
+docs/progress/tasks/0023-split-panes.md
+  s_82120e9b499222::t_b98705dcdf1bbd 1-37
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_eee7eba6e8c96c 39-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "33bd43b5ff61fda966c00437d30671dcef15e3cd",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
