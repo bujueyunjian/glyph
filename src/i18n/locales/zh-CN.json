@@ -5,7 +5,9 @@
   },
   "common": {
     "undo": "撤销",
-    "closeTab": "关闭标签"
+    "closeTab": "关闭标签",
+    "confirm": "确定",
+    "cancel": "取消"
   },
   "textops": {
     "group": "编辑行",
@@ -13,7 +15,12 @@
     "sortLines": "排序行",
     "dedupeLines": "去重行",
     "upperCase": "转为大写",
-    "lowerCase": "转为小写"
+    "lowerCase": "转为小写",
+    "addPrefix": "每行加前缀",
+    "addSuffix": "每行加后缀",
+    "wrap": "每行加前后缀",
+    "prefixLabel": "前缀",
+    "suffixLabel": "后缀"
   },
   "menu": {
     "file": "文件",

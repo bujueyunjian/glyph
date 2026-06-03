@@ -17,6 +17,10 @@ import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { FileTree } from "@/components/explorer/FileTree";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
+import {
+  PromptDialog,
+  type PromptRequest,
+} from "@/components/common/PromptDialog";
 import { EmptyState } from "@/components/workbench/EmptyState";
 import { MenuBar } from "@/components/workbench/MenuBar";
 import { TabBar } from "@/components/workbench/TabBar";
@@ -29,11 +33,15 @@ import { useTheme } from "@/hooks/useTheme";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import type { CommandAction } from "@/types/commandTypes";
 import {
+  addPrefix,
+  addSuffix,
   dedupeLines,
+  mergeSpans,
   sortLines,
   toLowerCase,
   toUpperCase,
   trimLineEnds,
+  wrapLines,
 } from "@/features/textops/lineOps";
 import { getFileExtension } from "@/utils/path";
 
@@ -81,6 +89,7 @@ function App() {
   const [quickOpenOpen, setQuickOpenOpen] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [promptReq, setPromptReq] = useState<PromptRequest | null>(null);
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -118,23 +127,27 @@ function App() {
     if (view) (await import("@codemirror/search")).openSearchPanel(view);
   }, [activeView]);
 
-  // 文本力量:行变换作用于选区(扩到整行)或整篇;纯函数 + view.dispatch(不静态导入 CM)。
+  // 文本力量:行变换作用于每个选区(扩到整行、合并重叠)或整篇;纯函数 + view.dispatch(不静态导入 CM)。
   const transformLines = useCallback(
     (fn: (text: string) => string) => {
       const view = activeView();
       if (!view) return;
       const { state } = view;
-      const sel = state.selection.main;
-      const from = sel.empty ? 0 : state.doc.lineAt(sel.from).from;
-      const to = sel.empty ? state.doc.length : state.doc.lineAt(sel.to).to;
-      const text = state.doc.sliceString(from, to);
-      const next = fn(text);
-      if (next !== text) {
-        view.dispatch({
-          changes: { from, to, insert: next },
-          selection: { anchor: from, head: from + next.length },
-        });
-      }
+      const nonEmpty = state.selection.ranges.filter((range) => !range.empty);
+      const rawSpans = nonEmpty.length
+        ? nonEmpty.map((range) => ({
+            from: state.doc.lineAt(range.from).from,
+            to: state.doc.lineAt(range.to).to,
+          }))
+        : [{ from: 0, to: state.doc.length }];
+      const changes = mergeSpans(rawSpans).flatMap((span) => {
+        const text = state.doc.sliceString(span.from, span.to);
+        const next = fn(text);
+        return next === text
+          ? []
+          : [{ from: span.from, to: span.to, insert: next }];
+      });
+      if (changes.length) view.dispatch({ changes });
       view.focus();
     },
     [activeView],
@@ -206,6 +219,47 @@ function App() {
         title: t("textops.lowerCase"),
         group: t("textops.group"),
         perform: () => transformLines(toLowerCase),
+      },
+      {
+        id: "textops.addPrefix",
+        title: t("textops.addPrefix"),
+        group: t("textops.group"),
+        perform: () =>
+          setPromptReq({
+            title: t("textops.addPrefix"),
+            fields: [{ key: "prefix", label: t("textops.prefixLabel") }],
+            onSubmit: (v) =>
+              transformLines((text) => addPrefix(text, v.prefix ?? "")),
+          }),
+      },
+      {
+        id: "textops.addSuffix",
+        title: t("textops.addSuffix"),
+        group: t("textops.group"),
+        perform: () =>
+          setPromptReq({
+            title: t("textops.addSuffix"),
+            fields: [{ key: "suffix", label: t("textops.suffixLabel") }],
+            onSubmit: (v) =>
+              transformLines((text) => addSuffix(text, v.suffix ?? "")),
+          }),
+      },
+      {
+        id: "textops.wrap",
+        title: t("textops.wrap"),
+        group: t("textops.group"),
+        perform: () =>
+          setPromptReq({
+            title: t("textops.wrap"),
+            fields: [
+              { key: "prefix", label: t("textops.prefixLabel") },
+              { key: "suffix", label: t("textops.suffixLabel") },
+            ],
+            onSubmit: (v) =>
+              transformLines((text) =>
+                wrapLines(text, v.prefix ?? "", v.suffix ?? ""),
+              ),
+          }),
       },
       ...themes.map((th) => ({
         id: `theme.${th.id}`,
@@ -437,6 +491,7 @@ function App() {
         activeThemeId={activeTheme.id}
         onThemeChange={setTheme}
       />
+      <PromptDialog request={promptReq} onClose={() => setPromptReq(null)} />
     </>
   );
 }

@@ -5,7 +5,9 @@
   },
   "common": {
     "undo": "Undo",
-    "closeTab": "Close tab"
+    "closeTab": "Close tab",
+    "confirm": "OK",
+    "cancel": "Cancel"
   },
   "textops": {
     "group": "Edit Lines",
@@ -13,7 +15,12 @@
     "sortLines": "Sort lines",
     "dedupeLines": "Remove duplicate lines",
     "upperCase": "Uppercase",
-    "lowerCase": "Lowercase"
+    "lowerCase": "Lowercase",
+    "addPrefix": "Add prefix to each line",
+    "addSuffix": "Add suffix to each line",
+    "wrap": "Wrap each line (prefix + suffix)",
+    "prefixLabel": "Prefix",
+    "suffixLabel": "Suffix"
   },
   "menu": {
     "file": "File",

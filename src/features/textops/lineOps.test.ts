@@ -4,10 +4,12 @@ import {
   addPrefix,
   addSuffix,
   dedupeLines,
+  mergeSpans,
   sortLines,
   toLowerCase,
   toUpperCase,
   trimLineEnds,
+  wrapLines,
 } from "@/features/textops/lineOps";
 
 describe("trimLineEnds", () => {
@@ -47,5 +49,38 @@ describe("前缀 / 后缀", () => {
   });
   it("每行加后缀,且不加到尾随换行的空行", () => {
     expect(addSuffix("a\nb\n", ";")).toBe("a;\nb;\n");
+  });
+  it("每行加前后缀(包裹)", () => {
+    expect(wrapLines("a\nb", "<", ">")).toBe("<a>\n<b>");
+  });
+});
+
+describe("mergeSpans", () => {
+  it("合并重叠区间", () => {
+    expect(
+      mergeSpans([
+        { from: 0, to: 5 },
+        { from: 3, to: 8 },
+      ]),
+    ).toEqual([{ from: 0, to: 8 }]);
+  });
+  it("合并相邻区间", () => {
+    expect(
+      mergeSpans([
+        { from: 0, to: 5 },
+        { from: 5, to: 9 },
+      ]),
+    ).toEqual([{ from: 0, to: 9 }]);
+  });
+  it("不相邻区间按起点排序保留", () => {
+    expect(
+      mergeSpans([
+        { from: 10, to: 12 },
+        { from: 0, to: 3 },
+      ]),
+    ).toEqual([
+      { from: 0, to: 3 },
+      { from: 10, to: 12 },
+    ]);
   });
 });

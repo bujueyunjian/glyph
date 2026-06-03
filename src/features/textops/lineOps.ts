@@ -52,12 +52,41 @@ export function toLowerCase(text: string): string {
   return text.toLowerCase();
 }
 
-/** 每行加前缀(留待命令面板输入项接入)。 */
+/** 每行加前缀。 */
 export function addPrefix(text: string, prefix: string): string {
   return mapLines(text, (line) => prefix + line);
 }
 
-/** 每行加后缀(留待命令面板输入项接入)。 */
+/** 每行加后缀。 */
 export function addSuffix(text: string, suffix: string): string {
   return mapLines(text, (line) => line + suffix);
+}
+
+/** 每行加前后缀(包裹)。 */
+export function wrapLines(
+  text: string,
+  prefix: string,
+  suffix: string,
+): string {
+  return mapLines(text, (line) => prefix + line + suffix);
+}
+
+export interface LineSpan {
+  from: number;
+  to: number;
+}
+
+// 合并重叠/相邻区间(多选区行变换用,保证 dispatch 的 changes 互不重叠)。
+export function mergeSpans(spans: LineSpan[]): LineSpan[] {
+  const sorted = [...spans].sort((a, b) => a.from - b.from);
+  const out: LineSpan[] = [];
+  for (const span of sorted) {
+    const last = out[out.length - 1];
+    if (last && span.from <= last.to) {
+      last.to = Math.max(last.to, span.to);
+    } else {
+      out.push({ from: span.from, to: span.to });
+    }
+  }
+  return out;
 }
