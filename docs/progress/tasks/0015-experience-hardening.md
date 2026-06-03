@@ -87,7 +87,8 @@
 - ✅ `pnpm typecheck` / `pnpm lint`（--max-warnings=0）/ `pnpm format:check` 全过。
 - ✅ `pnpm build`：入口 ~406KB / gzip ~130KB，**无 >500KB 警告，CM 仍懒加载**（window API 动态导入未进首屏），性能红线守住。
 - ✅ **Rust 已验证**（cargo 在 `~/.cargo/bin`，加入 PATH 后）：`rs:fmt` 通过（修正 file.rs 一处断行）；`rs:clippy --all-targets` 编译 41s **零 warning/error**；**capability `core:window:allow-destroy` 经 Tauri codegen 校验合法**。完整 `pnpm check` 全绿。
-- ⏳ **仅 GUI 交互行为待自验**（需真实显示环境）：可撤销关闭 toast、整窗关闭确认、会话 + 光标恢复、焦点环视觉、空态速查表，本地 `pnpm tauri:dev` 自验。
+- ✅ **已真跑验证**（本会话 `pnpm tauri:dev` 启动成功 + Playwright 连 :1420）：空态速查表（E）渲染正确、焦点环（A）`:focus-visible` 2px `#6aa8ff` 生效、app 启动无崩溃、窗口拦截在非 Tauri 上下文优雅降级。
+- ⏳ **Tauri 原生交互待手验**（macOS 的 Tauri 无 webdriver 自动化，无法自动驱动原生窗口）：标签可撤销关闭 toast（B）、整窗关闭确认（B）、原子保存运行期（C）、会话 + 光标恢复（F）——在原生窗口手动验。
 
 ### 遗留问题
 - **C mtime 外部改动校验**：移交任务 [0018](0018-agent-host-proc-spike.md) 一并做——需改 `open_file`/`save_file` 的 IPC 契约带 mtime，且与 0018 要建的 Rust→UI 推送 / `notify` 文件监听地基同源，单独做收益低且本环境无法验证 Rust。

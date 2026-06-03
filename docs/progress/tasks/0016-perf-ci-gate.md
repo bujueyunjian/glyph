@@ -62,12 +62,15 @@
 ### 实际改动（已完成：测试 + CI 地基）
 - **首批单测**：`src/utils/path.test.ts`（8 例）、`src/utils/storage.test.ts`（5 例，含「缺/坏 JSON」两态 + 写失败仅 warn），内存版 localStorage mock，零新依赖（vitest 已在 devDeps）。
 - **门禁补全**：`package.json` `check` 纳入 `pnpm test` 与 `pnpm rs:test`，闭合审查发现的「check 不跑测试」缺口。
-- **CI**：新建 `.github/workflows/ci.yml`——ubuntu + pnpm + Node 22 + Rust + Tauri WebKitGTK 系统依赖 + rust-cache，跑 `pnpm check`（含全部子项）+ `pnpm build`。
+- **CI**：新建 `.github/workflows/ci.yml`——ubuntu + pnpm + Node 22 + Rust + Tauri WebKitGTK 系统依赖 + rust-cache，跑 `pnpm check`（含全部子项）+ `pnpm build` + `pnpm perf:budget`。
+- **首屏体积预算门禁**：新建 `scripts/check-bundle-budget.mjs` + `perf:budget` 脚本——解析 dist/index.html 的首屏 JS、gzip 求和与预算（170KB）比对；把「靠人眼看 vite >500KB 警告」换成自动门禁（红队点名的脆弱防线）。懒加载块自动排除。
 
 ### 验证结果
 - ✅ `pnpm test`：13/13 通过（2 文件）。
 - ✅ 完整 `pnpm check` 端到端全绿：typecheck / lint(--max-warnings=0) / format:check / **test(13)** / rs:fmt / rs:clippy(0 warning) / **rs:test(0 例 ok)**。
-- ⏳ **CI yml 未在此执行**：无法在本环境跑 GitHub Actions；其步骤对齐已验证全绿的 `pnpm check`，push 后生效（首次需确认 Linux WebKitGTK 依赖名随发行版无偏差）。
+- ✅ `pnpm build && pnpm perf:budget` 实跑：首屏 JS gzip **127.1KB / 预算 170KB**，通过（单 chunk，懒加载块已排除）。
+- ✅ 本会话**真跑 `pnpm tauri:dev`**：app 编译（bin 1.16s）+ 启动 + 运行无崩溃（`core:window:allow-destroy` 运行期有效）；Playwright 连 :1420 验证空态（E）与焦点环（A）。
+- ⏳ **CI yml 未在此执行**：无法在本环境跑 GitHub Actions；其步骤对齐已验证全绿的 `pnpm check` + `perf:budget`，push 后生效（首次需确认 Linux WebKitGTK 依赖名随发行版无偏差）。
 
 ### 遗留问题（0016 核心未完：性能数字）
 - **键入延迟 p99 + 冷/热启动实测**：未做——需真实显示环境（headless 测不了 GUI 延迟）。要搭 `tauri-driver` + WebdriverIO（或 Playwright 接 webview）e2e harness 采集指标，并定门禁阈值（design-system B 节）。
