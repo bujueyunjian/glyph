@@ -3,6 +3,10 @@
     "name": "Glyph",
     "tagline": "The fast, light, beautiful editor any agent can plug into"
   },
+  "common": {
+    "undo": "Undo",
+    "closeTab": "Close tab"
+  },
   "menu": {
     "file": "File",
     "edit": "Edit",
@@ -50,7 +54,9 @@
     "saveAs": "Save As",
     "saved": "Saved",
     "openFailed": "Failed to open: {{msg}}",
-    "saveFailed": "Failed to save: {{msg}}"
+    "saveFailed": "Failed to save: {{msg}}",
+    "closedUnsaved": "Closed unsaved {{name}}",
+    "quitUnsaved": "You have unsaved changes. Quit anyway?"
   },
   "explorer": {
     "readFailed": "Failed to read directory: {{msg}}"
@@ -66,5 +72,10 @@
     "ligatures": "Ligatures",
     "reset": "Reset to defaults",
     "close": "Close"
+  },
+  "storage": {
+    "settingsCorrupted": "Settings data is corrupted; reset to defaults",
+    "recentCorrupted": "Recent files list is corrupted; cleared",
+    "sessionCorrupted": "Last session data is corrupted; ignored"
   }
 }

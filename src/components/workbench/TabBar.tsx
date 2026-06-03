@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { EditorTab } from "@/hooks/useEditorTabs";
 import { getFileName } from "@/utils/path";
@@ -12,6 +13,7 @@ interface TabBarProps {
 
 // 标签栏。脏标记显示为小圆点,hover 时变为关闭按钮(克制:不抢视觉)。
 export function TabBar({ tabs, activePath, onActivate, onClose }: TabBarProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-9 shrink-0 items-stretch overflow-x-auto border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       {tabs.map((tab) => {
@@ -35,7 +37,7 @@ export function TabBar({ tabs, activePath, onActivate, onClose }: TabBarProps) {
               ) : null}
               <button
                 type="button"
-                aria-label="close"
+                aria-label={t("common.closeTab")}
                 onClick={(event) => {
                   event.stopPropagation();
                   onClose(tab.path);

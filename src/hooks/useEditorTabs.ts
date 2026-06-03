@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import { openFile, saveFile } from "@/api/fileApi";
+import { getFileName } from "@/utils/path";
 
 export interface EditorTab {
   path: string;
@@ -89,11 +90,34 @@ export function useEditorTabs(
     [activate],
   );
 
+  // 撤销关闭:把内容快照重新插回原位置并激活(脏标签关闭后可一键找回)。
+  const restoreTab = useCallback(
+    (idx: number, path: string, content: string) => {
+      const current = tabsRef.current;
+      if (current.some((tab) => tab.path === path)) {
+        activate(path); // 已被重新打开,仅激活
+        return;
+      }
+      const at = Math.min(idx, current.length);
+      const restored: EditorTab = {
+        path,
+        initialContent: content,
+        isDirty: true,
+      };
+      writeTabs([...current.slice(0, at), restored, ...current.slice(at)]);
+      activate(path);
+    },
+    [writeTabs, activate],
+  );
+
   const closeTab = useCallback(
     (path: string) => {
       const prev = tabsRef.current;
       const idx = prev.findIndex((tab) => tab.path === path);
       if (idx === -1) return;
+      // 关闭脏标签前先抓内容快照:实例随移除而卸载,否则无从撤销。
+      const snapshot = prev[idx].isDirty ? getContent(path) : null;
+
       const next = prev.filter((tab) => tab.path !== path);
       writeTabs(next);
       if (activePathRef.current === path) {
@@ -101,8 +125,18 @@ export function useEditorTabs(
           next.length === 0 ? null : next[Math.min(idx, next.length - 1)].path,
         );
       }
+
+      // 脏标签:撤销优于确认(准则 #9)。给可撤销 toast,而非静默丢弃未保存内容。
+      if (snapshot !== null) {
+        toast(t("file.closedUnsaved", { name: getFileName(path) }), {
+          action: {
+            label: t("common.undo"),
+            onClick: () => restoreTab(idx, path, snapshot),
+          },
+        });
+      }
     },
-    [writeTabs, activate],
+    [writeTabs, activate, getContent, t, restoreTab],
   );
 
   const save = useCallback(async () => {

@@ -11,10 +11,25 @@ pub fn open_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("打开文件失败 ({path}): {e}"))
 }
 
-// v1 直接写入;原子保存(临时文件 + rename)留 M1 硬化。
+// 原子保存:先写同目录临时文件,再 rename 覆盖目标。
+// 同一文件系统上 rename 是原子操作 → 崩溃/断电不会留下半截文件。
 #[tauri::command]
 pub fn save_file(path: String, content: String) -> Result<(), String> {
-    fs::write(&path, content).map_err(|e| format!("保存文件失败 ({path}): {e}"))
+    let target = Path::new(&path);
+    let dir = target
+        .parent()
+        .ok_or_else(|| format!("保存文件失败 ({path}): 无效的目标路径"))?;
+    let file_name = target
+        .file_name()
+        .ok_or_else(|| format!("保存文件失败 ({path}): 无效的文件名"))?;
+    // 临时文件必须与目标同目录,否则跨文件系统 rename 会失败。
+    let tmp = dir.join(format!(".{}.glyphtmp", file_name.to_string_lossy()));
+    fs::write(&tmp, content).map_err(|e| format!("保存文件失败 ({path}): 写入临时文件 {e}"))?;
+    fs::rename(&tmp, target).map_err(|e| {
+        // 替换失败时清理临时文件,不留垃圾。
+        let _ = fs::remove_file(&tmp);
+        format!("保存文件失败 ({path}): 替换目标 {e}")
+    })
 }
 
 // 文件树的一项。serde camelCase 对齐前端 src/types/fsTypes.ts 的 DirEntry。

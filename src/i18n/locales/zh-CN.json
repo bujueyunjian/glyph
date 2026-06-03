@@ -3,6 +3,10 @@
     "name": "Glyph",
     "tagline": "又快、又轻、又美,任何 agent 都能插进来的编辑器"
   },
+  "common": {
+    "undo": "撤销",
+    "closeTab": "关闭标签"
+  },
   "menu": {
     "file": "文件",
     "edit": "编辑",
@@ -50,7 +54,9 @@
     "saveAs": "另存为",
     "saved": "已保存",
     "openFailed": "打开失败: {{msg}}",
-    "saveFailed": "保存失败: {{msg}}"
+    "saveFailed": "保存失败: {{msg}}",
+    "closedUnsaved": "已关闭未保存的 {{name}}",
+    "quitUnsaved": "有未保存的更改,确定退出吗?"
   },
   "explorer": {
     "readFailed": "读取目录失败: {{msg}}"
@@ -66,5 +72,10 @@
     "ligatures": "连字",
     "reset": "恢复默认",
     "close": "关闭"
+  },
+  "storage": {
+    "settingsCorrupted": "设置数据损坏,已恢复默认",
+    "recentCorrupted": "最近文件记录损坏,已清空",
+    "sessionCorrupted": "上次会话数据损坏,已忽略"
   }
 }

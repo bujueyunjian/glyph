@@ -3,5 +3,10 @@
   "identifier": "default",
   "description": "Glyph 主窗口默认能力:核心 + 打开外链 + 文件对话框",
   "windows": ["main"],
-  "permissions": ["core:default", "opener:default", "dialog:default"]
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "dialog:default",
+    "core:window:allow-destroy"
+  ]
 }

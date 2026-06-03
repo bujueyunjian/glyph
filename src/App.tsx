@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -22,6 +23,7 @@ import { TabBar } from "@/components/workbench/TabBar";
 import { WorkbenchLayout } from "@/components/workbench/WorkbenchLayout";
 import { useEditorTabs } from "@/hooks/useEditorTabs";
 import { useRecentFiles } from "@/hooks/useRecentFiles";
+import { useSession } from "@/hooks/useSession";
 import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/hooks/useTheme";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -62,6 +64,12 @@ function App() {
   } = useEditorTabs(getContent, addRecent);
   const { themes, activeTheme, setTheme } = useTheme();
   const { rootPath, openFolder, closeFolder } = useWorkspace();
+  const { loadSession, saveSession } = useSession();
+  // 镜像未保存状态,供窗口关闭处理器读取最新值。
+  const hasDirtyRef = useRef(false);
+  hasDirtyRef.current = tabs.some((tab) => tab.isDirty);
+  // 会话恢复的光标位:启动时载入,挂载时由各 CodeEditor 应用一次。
+  const restoredCursorsRef = useRef<Record<string, number>>({});
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [quickOpenOpen, setQuickOpenOpen] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -201,6 +209,73 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, save, saveAs, closeTab, activePath]);
 
+  // 会话恢复:启动时一次,打开上次会话的文件(缺=空态;坏 JSON 已在 loadSession 响亮报错)。
+  const restoreStarted = useRef(false);
+  const restoreDone = useRef(false);
+  useEffect(() => {
+    if (restoreStarted.current) return;
+    restoreStarted.current = true;
+    const session = loadSession();
+    if (session?.cursors) restoredCursorsRef.current = session.cursors;
+    void (async () => {
+      if (session && session.openPaths.length > 0) {
+        const { openPaths, activePath: savedActive } = session;
+        // 激活项最后打开,使其自然成为当前标签;已删文件由 openPath 响亮提示并跳过。
+        const ordered = savedActive
+          ? [...openPaths.filter((p) => p !== savedActive), savedActive]
+          : openPaths;
+        for (const path of ordered) {
+          await openPath(path);
+        }
+      }
+      restoreDone.current = true;
+    })();
+  }, [loadSession, openPath]);
+
+  // 会话持久化:恢复完成后,标签/激活项变更即存(恢复期间不写,避免清空上次会话)。
+  // 光标位在切换/开关标签时一并快照(此刻各文件 CodeMirror 实例仍在,可读取)。
+  useEffect(() => {
+    if (!restoreDone.current) return;
+    const cursors: Record<string, number> = {};
+    for (const tab of tabs) {
+      const head = editorRefs.current.get(tab.path)?.view?.state.selection.main
+        .head;
+      if (head != null) cursors[tab.path] = head;
+    }
+    saveSession(
+      tabs.map((tab) => tab.path),
+      activePath,
+      cursors,
+    );
+  }, [tabs, activePath, saveSession]);
+
+  // 拦截整窗关闭:有未保存内容时确认兜底(退出不可撤销,故此处用确认而非撤销)。
+  // 动态 import 窗口 API:挂载期一次性逻辑,不进首屏(守"首屏只含外壳"红线)。
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void (async () => {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const win = getCurrentWindow();
+        const fn = await win.onCloseRequested(async (event) => {
+          if (!hasDirtyRef.current) return; // 无未保存 → 放行
+          event.preventDefault();
+          const quit = await ask(t("file.quitUnsaved"), { kind: "warning" });
+          if (quit) await win.destroy();
+        });
+        if (disposed) fn();
+        else unlisten = fn;
+      } catch (err) {
+        console.warn("注册窗口关闭拦截失败(非 Tauri 上下文?):", err);
+      }
+    })();
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [t]);
+
   return (
     <>
       <WorkbenchLayout
@@ -265,6 +340,7 @@ function App() {
                         else editorRefs.current.delete(tab.path);
                       }}
                       initialValue={tab.initialContent}
+                      initialCursor={restoredCursorsRef.current[tab.path]}
                       extension={getFileExtension(tab.path)}
                       themeKind={activeTheme.kind}
                       settings={settings}

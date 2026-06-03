@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 import { EditorState, type Extension } from "@codemirror/state";
@@ -13,6 +13,8 @@ import { loadLanguageExtension } from "./languageRegistry";
 interface CodeEditorProps {
   /** 初始内容(仅挂载时取一次);文档之后由 CodeMirror 自己持有。 */
   initialValue: string;
+  /** 初始光标偏移(会话恢复用);仅视图创建时应用一次并滚动入视。 */
+  initialCursor?: number;
   /** 文件扩展名(小写,不含点),用于异步加载语法高亮。 */
   extension: string;
   /** 跟随应用主题的明暗。 */
@@ -30,10 +32,27 @@ interface CodeEditorProps {
 // 语言包按需异步加载;search 提供 Ctrl/Cmd+F;settings 实时驱动字号/缩进/换行等。
 export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
   function CodeEditor(
-    { initialValue, extension, themeKind, settings, onDocChange },
+    {
+      initialValue,
+      initialCursor,
+      extension,
+      themeKind,
+      settings,
+      onDocChange,
+    },
     ref,
   ) {
     const [languageExt, setLanguageExt] = useState<Extension[]>([]);
+
+    // 视图创建时应用恢复的光标并滚动入视(仅一次;越界则钳到文末)。
+    const handleCreateEditor = useCallback(
+      (view: EditorView) => {
+        if (initialCursor == null) return;
+        const pos = Math.min(Math.max(initialCursor, 0), view.state.doc.length);
+        view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
+      },
+      [initialCursor],
+    );
 
     useEffect(() => {
       let active = true;
@@ -81,6 +100,7 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
         theme={themeKind === "light" ? vscodeLight : vscodeDark}
         basicSetup={basicSetup}
         extensions={extensions}
+        onCreateEditor={handleCreateEditor}
         onChange={onDocChange}
         className="h-full w-full"
       />
