@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, Command, Stdio};
-use std::sync::Mutex;
+use std::sync::mpsc::{channel, Sender};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, State};
@@ -17,10 +19,15 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 // 故可在无显示环境对真实语言服务器端到端验证(见 tests:对 rust-analyzer 跑 initialize 握手)。
 // 后续:textDocument/didOpen + completion/hover + publishDiagnostics 路由到前端渲染。
 
-// 受管语言服务器:句柄(终止用)+ stdin(写入用)。
+// 等待响应的请求表:请求 id → 回送通道。读线程按 id 路由响应给等待的命令。
+type PendingMap = Arc<Mutex<HashMap<u64, Sender<Value>>>>;
+
+// 受管语言服务器:句柄(终止)+ stdin(写入)+ 请求 id 计数 + 待响应表。
 struct ManagedServer {
     child: Child,
     stdin: ChildStdin,
+    next_req_id: u64,
+    pending: PendingMap,
 }
 
 // 语言服务器注册表,挂到 Tauri State,按 id 管理多个服务器。
@@ -89,6 +96,19 @@ fn build_command(program: &str, args: &[String]) -> Command {
     cmd
 }
 
+// 若消息是对某等待请求的响应(id 命中 pending),路由给等待者并返回 true;
+// 否则(通知 / 服务器→客户端请求 / 未匹配)返回 false 由调用方推 UI。
+fn route_response(message: &Value, pending: &Mutex<HashMap<u64, Sender<Value>>>) -> bool {
+    let Some(id) = message.get("id").and_then(Value::as_u64) else {
+        return false;
+    };
+    let Some(tx) = pending.lock().unwrap().remove(&id) else {
+        return false;
+    };
+    let _ = tx.send(message.clone());
+    true
+}
+
 // spawn 语言服务器并完成 initialize 握手;成功后发 `lsp://ready`(带 capabilities),
 // 再起后台线程读后续帧消息经 `lsp://message` 推 UI,结束发 `lsp://closed`。
 // 握手在命令内同步完成(数百 ms),失败响亮返回 Err。返回 id 供后续 send/stop。
@@ -126,19 +146,32 @@ pub fn lsp_start(
         json!({ "id": id, "capabilities": capabilities }),
     );
 
-    // 握手已消费完 initialize 响应;reader 移入线程继续读诊断/响应等后续帧。
+    let pending: PendingMap = Arc::new(Mutex::new(HashMap::new()));
+    let pending_reader = Arc::clone(&pending);
+
+    // 握手已消费完 initialize 响应;reader 移入线程读后续帧:
+    // 命中 pending 的响应路由给等待命令,其余(诊断等通知)推 UI。
     std::thread::spawn(move || {
-        while let Ok(Some(message)) = read_message(&mut reader) {
-            let _ = app.emit("lsp://message", LspMessage { id, message });
+        while let Ok(Some(raw)) = read_message(&mut reader) {
+            if let Ok(message) = serde_json::from_str::<Value>(&raw) {
+                if route_response(&message, &pending_reader) {
+                    continue;
+                }
+            }
+            let _ = app.emit("lsp://message", LspMessage { id, message: raw });
         }
         let _ = app.emit("lsp://closed", id);
     });
 
-    registry
-        .servers
-        .lock()
-        .unwrap()
-        .insert(id, ManagedServer { child, stdin });
+    registry.servers.lock().unwrap().insert(
+        id,
+        ManagedServer {
+            child,
+            stdin,
+            next_req_id: 1,
+            pending,
+        },
+    );
     Ok(id)
 }
 
@@ -157,6 +190,47 @@ pub fn lsp_send(registry: State<'_, LspRegistry>, id: u32, message: String) -> R
         .stdin
         .flush()
         .map_err(|e| format!("刷新服务器 {id} 失败: {e}"))
+}
+
+// 发一条带响应的 LSP 请求(如 completion/hover/definition),阻塞等待响应。
+// 自动分配请求 id;读线程按 id 路由响应回来。超时/服务器错误响亮返回 Err。
+#[tauri::command]
+pub fn lsp_request(
+    registry: State<'_, LspRegistry>,
+    id: u32,
+    method: String,
+    params: Value,
+) -> Result<Value, String> {
+    let (tx, rx) = channel();
+    let (req_id, pending) = {
+        let mut servers = registry.servers.lock().unwrap();
+        let server = servers
+            .get_mut(&id)
+            .ok_or_else(|| format!("语言服务器 {id} 不存在"))?;
+        let req_id = server.next_req_id;
+        server.next_req_id += 1;
+        server.pending.lock().unwrap().insert(req_id, tx);
+        let request = json!({ "jsonrpc": "2.0", "id": req_id, "method": method, "params": params });
+        server
+            .stdin
+            .write_all(&encode_message(&request.to_string()))
+            .and_then(|()| server.stdin.flush())
+            .map_err(|e| format!("写入请求失败: {e}"))?;
+        (req_id, Arc::clone(&server.pending))
+    }; // 释放 servers 锁后再等待,避免阻塞读线程/其它命令
+
+    match rx.recv_timeout(Duration::from_secs(10)) {
+        Ok(message) => {
+            if let Some(err) = message.get("error") {
+                return Err(err.to_string());
+            }
+            Ok(message.get("result").cloned().unwrap_or(Value::Null))
+        }
+        Err(_) => {
+            pending.lock().unwrap().remove(&req_id); // 清理悬挂的等待者
+            Err(format!("LSP {method} 请求超时"))
+        }
+    }
 }
 
 // LSP initialize 请求参数(rootUri = 工作区根)。抽出便于单测请求形状。
@@ -235,8 +309,12 @@ pub fn lsp_stop(registry: State<'_, LspRegistry>, id: u32) -> Result<(), String>
 
 #[cfg(test)]
 mod tests {
-    use super::{encode_message, initialize_params, lsp_initialize, read_message};
+    use super::{encode_message, initialize_params, lsp_initialize, read_message, route_response};
+    use serde_json::{json, Value};
+    use std::collections::HashMap;
     use std::io::Cursor;
+    use std::sync::mpsc::channel;
+    use std::sync::Mutex;
 
     #[test]
     fn encodes_with_content_length_header() {
@@ -293,6 +371,29 @@ mod tests {
         assert!(params["capabilities"]["textDocument"]["completion"].is_object());
     }
 
+    #[test]
+    fn routes_response_to_waiting_request_by_id() {
+        let pending = Mutex::new(HashMap::new());
+        let (tx, rx) = channel::<Value>();
+        pending.lock().unwrap().insert(7, tx);
+
+        let response = json!({ "jsonrpc": "2.0", "id": 7, "result": { "ok": true } });
+        assert!(route_response(&response, &pending));
+        assert_eq!(rx.recv().unwrap()["result"]["ok"], true);
+        assert!(pending.lock().unwrap().is_empty(), "路由后应移除等待者");
+    }
+
+    #[test]
+    fn notifications_and_unmatched_ids_are_not_routed() {
+        let pending = Mutex::new(HashMap::new());
+        // 通知(无 id)→ 不路由(交由调用方推 UI)。
+        let note = json!({ "jsonrpc": "2.0", "method": "textDocument/publishDiagnostics" });
+        assert!(!route_response(&note, &pending));
+        // id 无等待者(如服务器→客户端请求)→ 不路由。
+        let server_req = json!({ "jsonrpc": "2.0", "id": 99, "method": "workspace/configuration" });
+        assert!(!route_response(&server_req, &pending));
+    }
+
     // 端到端握手:对真实 rust-analyzer 验证 spawn + 帧 + initialize 全栈。
     // CI(ubuntu)无 rust-analyzer 故 #[ignore];本地 `cargo test -- --ignored` 运行。
     #[test]
@@ -313,6 +414,64 @@ mod tests {
         assert!(
             result.get("capabilities").is_some(),
             "initialize 应返回 capabilities,实际: {result}"
+        );
+
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+
+    // 端到端 completion:initialize → didOpen → completion 请求 → 收到 id=1 响应。
+    // 证明 spawn + 帧 + 握手 + 请求/响应往返对真实 rust-analyzer 全通(headless)。
+    #[test]
+    #[ignore = "需本地安装 rust-analyzer;CI 无此二进制"]
+    fn completion_roundtrip_against_rust_analyzer() {
+        use super::build_command;
+        use std::io::{BufReader, Write};
+
+        let mut child = build_command("rust-analyzer", &[])
+            .spawn()
+            .expect("spawn rust-analyzer");
+        let mut stdin = child.stdin.take().expect("stdin");
+        let stdout = child.stdout.take().expect("stdout");
+        let mut reader = BufReader::new(stdout);
+
+        let dir = std::env::current_dir().unwrap();
+        let root = format!("file://{}", dir.display());
+        lsp_initialize(&mut reader, &mut stdin, &root).expect("initialize");
+
+        let uri = format!("file://{}/__glyph_lsp_probe.rs", dir.display());
+        let text = "fn main() {\n    let s = String::new();\n    s\n}\n";
+        let did_open = json!({
+            "jsonrpc": "2.0", "method": "textDocument/didOpen",
+            "params": { "textDocument": { "uri": uri, "languageId": "rust", "version": 1, "text": text } }
+        });
+        stdin
+            .write_all(&encode_message(&did_open.to_string()))
+            .and_then(|()| stdin.flush())
+            .unwrap();
+
+        let completion = json!({
+            "jsonrpc": "2.0", "id": 1, "method": "textDocument/completion",
+            "params": { "textDocument": { "uri": uri }, "position": { "line": 2, "character": 5 } }
+        });
+        stdin
+            .write_all(&encode_message(&completion.to_string()))
+            .and_then(|()| stdin.flush())
+            .unwrap();
+
+        // 读到 id=1 的响应(result 或 error 皆证明请求/响应往返通了)。
+        let response = loop {
+            let raw = read_message(&mut reader)
+                .expect("read")
+                .expect("eof 前应有响应");
+            let message: Value = serde_json::from_str(&raw).unwrap();
+            if message.get("id").and_then(Value::as_u64) == Some(1) {
+                break message;
+            }
+        };
+        assert!(
+            response.get("result").is_some() || response.get("error").is_some(),
+            "completion 应返回 result 或 error(往返),实际: {response}"
         );
 
         let _ = child.kill();

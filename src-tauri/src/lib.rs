@@ -10,7 +10,7 @@ use commands::file::{
     create_dir, create_file, delete_path, list_dir, list_files, open_file, rename_path, save_file,
 };
 use commands::search::search_files;
-use lsp::{lsp_send, lsp_start, lsp_stop, LspRegistry};
+use lsp::{lsp_request, lsp_send, lsp_start, lsp_stop, LspRegistry};
 use proc::{proc_kill, proc_spawn, proc_write, ProcRegistry};
 use watch::{unwatch_workspace, watch_workspace, WatchState};
 
@@ -43,6 +43,7 @@ pub fn run() {
             agent_stream,
             lsp_start,
             lsp_send,
+            lsp_request,
             lsp_stop
         ])
         .run(tauri::generate_context!())
