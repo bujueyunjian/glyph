@@ -1,5 +1,6 @@
 mod agent;
 mod commands;
+mod lsp;
 mod proc;
 mod watch;
 
@@ -9,6 +10,7 @@ use commands::file::{
     create_dir, create_file, delete_path, list_dir, list_files, open_file, rename_path, save_file,
 };
 use commands::search::search_files;
+use lsp::{lsp_send, lsp_start, lsp_stop, LspRegistry};
 use proc::{proc_kill, proc_spawn, proc_write, ProcRegistry};
 use watch::{unwatch_workspace, watch_workspace, WatchState};
 
@@ -20,6 +22,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(ProcRegistry::default())
         .manage(WatchState::default())
+        .manage(LspRegistry::default())
         .invoke_handler(tauri::generate_handler![
             get_app_info,
             open_file,
@@ -37,7 +40,10 @@ pub fn run() {
             watch_workspace,
             unwatch_workspace,
             agent_oneshot,
-            agent_stream
+            agent_stream,
+            lsp_start,
+            lsp_send,
+            lsp_stop
         ])
         .run(tauri::generate_context!())
         .expect("Glyph 启动失败");
