@@ -1,0 +1,46 @@
+name: CI (cross-platform smoke)
+
+# 在 macOS + Windows 上跑 Rust 编译/测试冒烟,捕获平台特有的编译错误
+# (例如 proc.rs 的 #[cfg(windows)] CREATE_NO_WINDOW 路径)。ubuntu 全量门禁见 ci.yml。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-cross-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-smoke:
+    name: Rust smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14 # Apple Silicon
+          - os: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # tauri 的 generate_context! 需要 frontendDist(../dist)存在才能 cargo check。
+      - name: Frontend dist placeholder
+        shell: bash
+        run: mkdir -p dist
+
+      - name: cargo check (平台特有编译错误)
+        run: cargo check --manifest-path src-tauri/Cargo.toml --all-targets
+
+      - name: cargo test (平台特有测试)
+        run: cargo test --manifest-path src-tauri/Cargo.toml

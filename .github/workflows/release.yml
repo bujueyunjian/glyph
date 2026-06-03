@@ -1,0 +1,160 @@
+name: Release
+
+# 跨平台打包发布:打 v* 标签(或手动 dispatch)触发,矩阵构建四平台安装包并发 GitHub Release。
+# 参照姊妹项目 git-ai-studio 的 release 流水线,去掉其 updater/签名/latest.json
+# (Glyph 暂无 updater 配置;自更新留 M6,需单独决策 + minisign 密钥)。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows (NSIS)
+            os: windows-2022
+            artifact: windows
+            tauri_args: --bundles nsis
+          - name: macOS (Universal)
+            os: macos-14
+            artifact: macos
+            tauri_args: --target universal-apple-darwin --bundles app,dmg
+          - name: Linux x86_64
+            os: ubuntu-22.04
+            artifact: linux-x86_64
+            tauri_args: --bundles deb,appimage
+          - name: Linux ARM64
+            os: ubuntu-22.04-arm
+            artifact: linux-arm64
+            tauri_args: --bundles deb,appimage
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add macOS universal targets
+        if: runner.os == 'macOS'
+        run: |
+          rustup target add aarch64-apple-darwin
+          rustup target add x86_64-apple-darwin
+
+      - name: Install Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential curl file \
+            libayatana-appindicator3-dev librsvg2-dev libssl-dev \
+            libwebkit2gtk-4.1-dev patchelf pkg-config wget xdg-utils
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      # pnpm tauri build 会先跑 beforeBuildCommand(pnpm build)再出原生包。
+      - name: Build Tauri bundles
+        run: pnpm tauri build ${{ matrix.tauri_args }}
+
+      - name: Collect Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
+          $version = $env:GITHUB_REF_NAME
+          if (-not $version) { $version = "manual" }
+          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Recurse -Filter *.exe | Select-Object -First 1
+          if ($null -eq $exe) { throw "Windows NSIS installer not found" }
+          Copy-Item $exe.FullName "release-assets/Glyph-$version-Windows-x86_64-setup.exe"
+
+      - name: Collect macOS installer
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          version="${GITHUB_REF_NAME:-manual}"
+          dmg="$(find src-tauri/target -path '*bundle/dmg/*.dmg' -type f | head -1 || true)"
+          if [ -z "$dmg" ]; then echo "macOS DMG not found" >&2; exit 1; fi
+          cp "$dmg" "release-assets/Glyph-${version}-macOS-universal.dmg"
+
+      - name: Collect Linux installers
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          version="${GITHUB_REF_NAME:-manual}"
+          case "${{ matrix.artifact }}" in
+            linux-arm64) arch_label="aarch64" ;;
+            *) arch_label="x86_64" ;;
+          esac
+          deb="$(find src-tauri/target -path '*bundle/deb/*.deb' -type f | head -1 || true)"
+          appimage="$(find src-tauri/target -path '*bundle/appimage/*.AppImage' -type f | head -1 || true)"
+          if [ -z "$deb" ]; then echo "Linux deb not found" >&2; exit 1; fi
+          if [ -z "$appimage" ]; then echo "Linux AppImage not found" >&2; exit 1; fi
+          cp "$deb" "release-assets/Glyph-${version}-Linux-${arch_label}.deb"
+          cp "$appimage" "release-assets/Glyph-${version}-Linux-${arch_label}.AppImage"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.artifact }}
+          path: release-assets/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-22.04
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: List assets
+        run: ls -la release-assets
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          files: release-assets/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
