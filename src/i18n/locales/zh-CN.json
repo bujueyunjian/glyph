@@ -32,7 +32,12 @@
   "edit": {
     "undo": "撤销",
     "redo": "重做",
-    "find": "查找/替换"
+    "find": "查找/替换",
+    "toggleComment": "切换行注释",
+    "moveLineUp": "上移行",
+    "moveLineDown": "下移行",
+    "duplicateLine": "复制行",
+    "deleteLine": "删除行"
   },
   "view": {
     "showSidebar": "显示侧栏",

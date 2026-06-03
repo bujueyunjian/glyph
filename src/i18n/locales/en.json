@@ -32,7 +32,12 @@
   "edit": {
     "undo": "Undo",
     "redo": "Redo",
-    "find": "Find / Replace"
+    "find": "Find / Replace",
+    "toggleComment": "Toggle Line Comment",
+    "moveLineUp": "Move Line Up",
+    "moveLineDown": "Move Line Down",
+    "duplicateLine": "Duplicate Line",
+    "deleteLine": "Delete Line"
   },
   "view": {
     "showSidebar": "Show Sidebar",

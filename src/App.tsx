@@ -252,6 +252,33 @@ function App() {
     if (view) (await import("@codemirror/search")).openSearchPanel(view);
   }, [activeView]);
 
+  // 行编辑动词(注释/移动/复制/删除行):复用 CodeMirror 内置命令,经命令面板暴露
+  // 以便发现(快捷键由 basicSetup 的 defaultKeymap 已绑定)。动态 import 不进首屏。
+  const runLineCommand = useCallback(
+    async (
+      name:
+        | "toggleComment"
+        | "moveLineUp"
+        | "moveLineDown"
+        | "copyLineDown"
+        | "deleteLine",
+    ) => {
+      const view = activeView();
+      if (!view) return;
+      const cmds = await import("@codemirror/commands");
+      const command = {
+        toggleComment: cmds.toggleComment,
+        moveLineUp: cmds.moveLineUp,
+        moveLineDown: cmds.moveLineDown,
+        copyLineDown: cmds.copyLineDown,
+        deleteLine: cmds.deleteLine,
+      }[name];
+      command(view);
+      view.focus();
+    },
+    [activeView],
+  );
+
   // 文本力量:行变换作用于每个选区(扩到整行、合并重叠)或整篇;纯函数 + view.dispatch(不静态导入 CM)。
   const transformLines = useCallback(
     (fn: (text: string) => string) => {
@@ -489,6 +516,41 @@ function App() {
             },
           }),
       },
+      {
+        id: "edit.toggleComment",
+        title: t("edit.toggleComment"),
+        group: t("menu.edit"),
+        shortcut: "Ctrl/⌘ /",
+        perform: () => void runLineCommand("toggleComment"),
+      },
+      {
+        id: "edit.moveLineUp",
+        title: t("edit.moveLineUp"),
+        group: t("menu.edit"),
+        shortcut: "Alt ↑",
+        perform: () => void runLineCommand("moveLineUp"),
+      },
+      {
+        id: "edit.moveLineDown",
+        title: t("edit.moveLineDown"),
+        group: t("menu.edit"),
+        shortcut: "Alt ↓",
+        perform: () => void runLineCommand("moveLineDown"),
+      },
+      {
+        id: "edit.duplicateLine",
+        title: t("edit.duplicateLine"),
+        group: t("menu.edit"),
+        shortcut: "Shift Alt ↓",
+        perform: () => void runLineCommand("copyLineDown"),
+      },
+      {
+        id: "edit.deleteLine",
+        title: t("edit.deleteLine"),
+        group: t("menu.edit"),
+        shortcut: "Ctrl/⌘ ⇧ K",
+        perform: () => void runLineCommand("deleteLine"),
+      },
       ...(effectiveIsMarkdown
         ? [
             {
@@ -639,6 +701,7 @@ function App() {
       askAgent,
       effectiveIsMarkdown,
       formatInline,
+      runLineCommand,
     ],
   );
 
