@@ -14,8 +14,27 @@ use commands::search::search_files;
 use launch::{take_launch_file, LaunchFile};
 use lsp::{lsp_request, lsp_send, lsp_start, lsp_stop, LspRegistry};
 use proc::{proc_kill, proc_spawn, proc_write, ProcRegistry};
-use tauri::{Emitter, Manager, RunEvent};
 use watch::{unwatch_workspace, watch_workspace, WatchState};
+
+// 处理运行时事件。macOS「用 Glyph 打开」经 RunEvent::Opened 传文件;
+// 该变体仅 macOS 存在(Win/Linux 经命令行参数,见 launch.rs),故按平台条件编译。
+#[cfg(target_os = "macos")]
+fn on_run_event(app_handle: &tauri::AppHandle, event: &tauri::RunEvent) {
+    use tauri::{Emitter, Manager};
+    if let tauri::RunEvent::Opened { urls } = event {
+        for url in urls {
+            if let Ok(path) = url.to_file_path() {
+                let path = path.to_string_lossy().to_string();
+                // 运行时 emit 通知前端;同时写 LaunchFile 兜底冷启动竞态。
+                *app_handle.state::<launch::LaunchFile>().0.lock().unwrap() = Some(path.clone());
+                let _ = app_handle.emit("open-external-file", path);
+            }
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn on_run_event(_app_handle: &tauri::AppHandle, _event: &tauri::RunEvent) {}
 
 // 应用装配入口。插件 + state + command 注册都在这里;命令实现在 commands/* 与 proc.rs。
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -55,17 +74,5 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         .expect("Glyph 启动失败")
-        .run(|app_handle, event| {
-            // macOS「用 Glyph 打开」/拖到 Dock:运行时 emit 通知前端打开,
-            // 同时写入 LaunchFile 兜底冷启动(前端轮询时取走)。
-            if let RunEvent::Opened { urls } = event {
-                for url in urls {
-                    if let Ok(path) = url.to_file_path() {
-                        let path = path.to_string_lossy().to_string();
-                        *app_handle.state::<LaunchFile>().0.lock().unwrap() = Some(path.clone());
-                        let _ = app_handle.emit("open-external-file", path);
-                    }
-                }
-            }
-        });
+        .run(|app_handle, event| on_run_event(app_handle, &event));
 }
