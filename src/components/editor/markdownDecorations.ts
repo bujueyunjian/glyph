@@ -47,6 +47,8 @@ export function buildMarkdownDecorations(
       from,
       to,
       enter: (node) => {
+        // 跨段边界的节点会被相邻两段各 enter 一次;只在节点起点所在段处理,去重。
+        if (node.from < from) return;
         const deco = MARKS[node.name];
         if (deco && node.to > node.from) {
           decorations.push(deco.range(node.from, node.to));
@@ -54,11 +56,18 @@ export function buildMarkdownDecorations(
       },
     });
   }
-  // sort=true:节点嵌套(如标题含粗体)产生重叠区间,交给 RangeSet 排序去重。
+  // sort=true:节点嵌套(如标题含粗体)产生重叠区间,交给 RangeSet 排序。
   return Decoration.set(decorations, true);
 }
 
-// 行内 Markdown 样式插件:文档/视口变化时按可见区重建装饰。
+// 语法树是否变化:覆盖语言包懒加载后的 reconfigure 与增量解析完成。
+// 缺它则:挂载初期语言未就绪 → 构造空装饰,语言到位(reconfigure)时本插件实例
+// 被复用只走 update(),而 doc/viewport/selection 均未变 → 装饰永不重建(标记不隐藏/不着色)。
+function treeChanged(update: ViewUpdate): boolean {
+  return syntaxTree(update.startState) !== syntaxTree(update.state);
+}
+
+// 行内 Markdown 样式插件:文档/视口/语法树变化时按可见区重建装饰。
 export const markdownInlineStyle = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
@@ -71,7 +80,7 @@ export const markdownInlineStyle = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
+      if (update.docChanged || update.viewportChanged || treeChanged(update)) {
         this.decorations = buildMarkdownDecorations(
           update.view.state,
           update.view.visibleRanges,
@@ -95,13 +104,23 @@ const CONCEAL_NODES = new Set([
 
 const CONCEAL = Decoration.replace({});
 
-// 收集选区涉及的所有行号(含跨行选区的每一行):这些行显示原始标记,不隐藏。
-export function selectionLines(state: EditorState): Set<number> {
+// 收集"光标/选区所在、且落在可见区内"的行号——这些行显示原始标记,不隐藏。
+// 关键:与 ranges(可见区)求交,只物化视口内的行 → O(viewport),不因大选区/全选退化成 O(doc)。
+export function selectionLines(
+  state: EditorState,
+  ranges: readonly { from: number; to: number }[],
+): Set<number> {
   const lines = new Set<number>();
-  for (const range of state.selection.ranges) {
-    const first = state.doc.lineAt(range.from).number;
-    const last = state.doc.lineAt(range.to).number;
-    for (let line = first; line <= last; line += 1) lines.add(line);
+  for (const sel of state.selection.ranges) {
+    const first = state.doc.lineAt(sel.from).number;
+    // 末行 off-by-one:选区尾恰落在下一行行首(只多选了换行符)时不波及下一行。
+    const lastPos = sel.to > sel.from ? sel.to - 1 : sel.to;
+    const last = state.doc.lineAt(lastPos).number;
+    for (const view of ranges) {
+      const lo = Math.max(first, state.doc.lineAt(view.from).number);
+      const hi = Math.min(last, state.doc.lineAt(view.to).number);
+      for (let line = lo; line <= hi; line += 1) lines.add(line);
+    }
   }
   return lines;
 }
@@ -118,6 +137,8 @@ export function buildConcealDecorations(
       from,
       to,
       enter: (node) => {
+        // 跨段边界节点只在起点所在段处理,避免相邻两段各推一条重复 replace。
+        if (node.from < from) return;
         if (!CONCEAL_NODES.has(node.name) || node.to <= node.from) return;
         // 光标所在行显示原始标记,便于编辑(Live Preview 核心交互)。
         if (cursorLines.has(state.doc.lineAt(node.from).number)) return;
@@ -128,7 +149,7 @@ export function buildConcealDecorations(
   return Decoration.set(decorations, true);
 }
 
-// Live Preview 隐藏标记插件:文档/视口/光标变化时按可见区与光标行重建。
+// Live Preview 隐藏标记插件:文档/视口/光标/语法树变化时按可见区与光标行重建。
 export const markdownConceal = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
@@ -137,17 +158,22 @@ export const markdownConceal = ViewPlugin.fromClass(
       this.decorations = buildConcealDecorations(
         view.state,
         view.visibleRanges,
-        selectionLines(view.state),
+        selectionLines(view.state, view.visibleRanges),
       );
     }
 
     update(update: ViewUpdate) {
-      // 含 selectionSet:光标移动需重算哪行显示原始标记。
-      if (update.docChanged || update.viewportChanged || update.selectionSet) {
+      // selectionSet:光标移动需重算揭示行;treeChanged:语言懒加载就绪后补建隐藏。
+      if (
+        update.docChanged ||
+        update.viewportChanged ||
+        update.selectionSet ||
+        treeChanged(update)
+      ) {
         this.decorations = buildConcealDecorations(
           update.view.state,
           update.view.visibleRanges,
-          selectionLines(update.view.state),
+          selectionLines(update.view.state, update.view.visibleRanges),
         );
       }
     }

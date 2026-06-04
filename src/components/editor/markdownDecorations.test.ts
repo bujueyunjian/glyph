@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildConcealDecorations,
   buildMarkdownDecorations,
+  selectionLines,
 } from "./markdownDecorations";
 
 // 在完整解析的 markdown 文档上构建装饰,导出 {from,to,cls} 列表便于断言。
@@ -94,5 +95,56 @@ describe("buildConcealDecorations", () => {
 
   it("纯文本无标记可隐藏", () => {
     expect(concealCount("plain prose", [])).toBe(0);
+  });
+
+  it("跨段边界节点不产生重复 replace(去重)", () => {
+    const doc = "**bold**";
+    const state = stateFor(doc);
+    // 把可见区切成两段,边界(pos 1)落在 ** 标记中间。
+    const set = buildConcealDecorations(
+      state,
+      [
+        { from: 0, to: 1 },
+        { from: 1, to: doc.length },
+      ],
+      new Set(),
+    );
+    let count = 0;
+    const cursor = set.iter();
+    while (cursor.value) {
+      count += 1;
+      cursor.next();
+    }
+    // 两个 EmphasisMark(**),不应因跨段被重复推成 4 条。
+    expect(count).toBe(2);
+  });
+});
+
+function stateFor(doc: string, anchor?: number, head?: number) {
+  const state = EditorState.create({
+    doc,
+    selection:
+      anchor === undefined ? undefined : { anchor, head: head ?? anchor },
+    extensions: [markdown({ base: markdownLanguage })],
+  });
+  ensureSyntaxTree(state, doc.length, 5000);
+  return state;
+}
+
+describe("selectionLines", () => {
+  it("只收落在可见区内的选中行(大选区不退化扫全文)", () => {
+    const doc = "L1\nL2\nL3\nL4\nL5";
+    const state = stateFor(doc, 0, doc.length); // 全选
+    // 可见区只给第 1 行。
+    const lines = selectionLines(state, [{ from: 0, to: 2 }]);
+    expect([...lines]).toEqual([1]);
+  });
+
+  it("末行 off-by-one:选区尾落在下一行行首时不波及下一行", () => {
+    const doc = "**a**\nXYZ";
+    const state = stateFor(doc, 0, 6); // 选到第 2 行行首(含换行)
+    const lines = selectionLines(state, [{ from: 0, to: doc.length }]);
+    expect(lines.has(1)).toBe(true);
+    expect(lines.has(2)).toBe(false);
   });
 });
