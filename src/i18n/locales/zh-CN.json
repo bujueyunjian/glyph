@@ -99,7 +99,10 @@
     "promptLabel": "提问",
     "running": "正在询问 agent…",
     "failed": "agent 调用失败: {{msg}}",
-    "resultTitle": "Agent 响应"
+    "resultTitle": "Agent 响应",
+    "panelTitle": "AI Agent",
+    "panelHint": "在下方输入提问。Glyph 不绑模型/密钥——接你已装的 ACP 适配器(如 claude-agent-acp)。",
+    "send": "发送"
   },
   "workbench": {
     "emptyTitle": "开始编辑",

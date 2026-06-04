@@ -25,7 +25,7 @@ import { agentCancel, agentStream } from "@/api/agentApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
-import { AgentResultDialog } from "@/components/command/AgentResultDialog";
+import { AgentPanel } from "@/components/command/AgentPanel";
 import { FileTree } from "@/components/explorer/FileTree";
 import type { FileTreeActions } from "@/components/explorer/FileTreeNode";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
@@ -170,30 +170,35 @@ function App() {
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
   const [agentResult, setAgentResult] = useState<string | null>(null);
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [agentCmd, setAgentCmd] = useState("claude-agent-acp");
   // 当前流式会话的 turn id(前端分配);事件按它过滤,杜绝旧会话残留串扰。
   const agentTurnRef = useRef<number | null>(null);
   const agentTurnCounter = useRef(0);
 
-  const closeAgentResult = useCallback(() => {
+  const closeAgentPanel = useCallback(() => {
     const turn = agentTurnRef.current;
     if (turn !== null) void agentCancel(turn); // 终止后台子进程,不留孤儿
     agentTurnRef.current = null;
-    setAgentResult(null);
+    setAgentBusy(false);
+    setAgentPanelOpen(false);
   }, []);
 
   // 向 ACP agent 流式提问:先取消上一会话,分配新 turn,响应分块经事件按 turn 过滤后追加。
   const askAgent = useCallback(
-    (agentCmd: string, prompt: string) => {
+    (cmd: string, prompt: string) => {
       const prev = agentTurnRef.current;
       if (prev !== null) void agentCancel(prev);
       const turn = agentTurnCounter.current + 1;
       agentTurnCounter.current = turn;
       agentTurnRef.current = turn; // 先于发起设置,事件抵达即可匹配(无竞态丢块)
-      setAgentResult(""); // 开空对话框,等待流式分块
-      void agentStream(agentCmd, prompt, turn).catch((err) => {
+      setAgentResult(""); // 清空,等待流式分块
+      setAgentBusy(true);
+      void agentStream(cmd, prompt, turn).catch((err) => {
         if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
         agentTurnRef.current = null;
-        setAgentResult(null);
+        setAgentBusy(false);
         toast.error(t("agent.failed", { msg: (err as Error).message }));
       });
     },
@@ -218,12 +223,13 @@ function App() {
           listen<{ turnId: number }>("agent://done", (e) => {
             if (e.payload.turnId === agentTurnRef.current) {
               agentTurnRef.current = null;
+              setAgentBusy(false);
             }
           }),
           listen<{ turnId: number; message: string }>("agent://error", (e) => {
             if (e.payload.turnId !== agentTurnRef.current) return;
             agentTurnRef.current = null;
-            setAgentResult(null);
+            setAgentBusy(false); // 保留已流式的部分,仅 toast 报错
             toast.error(t("agent.failed", { msg: e.payload.message }));
           }),
         ]);
@@ -673,23 +679,7 @@ function App() {
         id: "agent.ask",
         title: t("agent.ask"),
         group: t("agent.group"),
-        perform: () =>
-          setPromptReq({
-            title: t("agent.ask"),
-            fields: [
-              {
-                key: "agent",
-                label: t("agent.cmdLabel"),
-                defaultValue: "claude-agent-acp",
-              },
-              { key: "prompt", label: t("agent.promptLabel") },
-            ],
-            onSubmit: (v) => {
-              const prompt = v.prompt?.trim();
-              if (!prompt) return;
-              askAgent(v.agent?.trim() || "claude-agent-acp", prompt);
-            },
-          }),
+        perform: () => setAgentPanelOpen(true),
       },
       {
         id: "edit.toggleComment",
@@ -910,7 +900,6 @@ function App() {
       setTheme,
       transformLines,
       toggleSplit,
-      askAgent,
       effectiveIsMarkdown,
       effectiveIsJson,
       formatInline,
@@ -1277,6 +1266,16 @@ function App() {
                 </Suspense>
               </div>
             ) : null}
+            {agentPanelOpen ? (
+              <AgentPanel
+                agentCmd={agentCmd}
+                onAgentCmdChange={setAgentCmd}
+                result={agentResult}
+                busy={agentBusy}
+                onSend={(prompt) => askAgent(agentCmd, prompt)}
+                onClose={closeAgentPanel}
+              />
+            ) : null}
           </div>
         </div>
       </WorkbenchLayout>
@@ -1299,7 +1298,6 @@ function App() {
         rootPath={rootPath}
         onOpenHit={openHit}
       />
-      <AgentResultDialog result={agentResult} onClose={closeAgentResult} />
       <SettingsPanel
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

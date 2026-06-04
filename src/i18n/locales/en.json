@@ -99,7 +99,10 @@
     "promptLabel": "Prompt",
     "running": "Asking agent…",
     "failed": "Agent call failed: {{msg}}",
-    "resultTitle": "Agent response"
+    "resultTitle": "Agent response",
+    "panelTitle": "AI Agent",
+    "panelHint": "Type a prompt below. Glyph bundles no model/key — it connects to your installed ACP adapter (e.g. claude-agent-acp).",
+    "send": "Send"
   },
   "workbench": {
     "emptyTitle": "Start editing",
