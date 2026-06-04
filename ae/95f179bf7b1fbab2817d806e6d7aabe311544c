@@ -1,0 +1,40 @@
+src/types/settingsTypes.ts
+  s_82120e9b499222::t_f28faaebd57dc4 33-36
+  s_82120e9b499222::t_683c6abe23ba22 10,21
+  s_82120e9b499222::t_78a02e2c9156fb 27-32,37
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_5252f34cf2d03e 129-130
+  s_82120e9b499222::t_e8db7c9df082ee 152
+src/hooks/useEditorTabs.ts
+  s_82120e9b499222::t_67a9a26823a6a7 242-243
+  s_82120e9b499222::t_423ee3a1f2ea2c 200-215
+src/components/editor/CodeEditor.tsx
+  s_82120e9b499222::t_2af9a8ed7b7fb9 79-81
+src/components/settings/SettingsPanel.tsx
+  s_82120e9b499222::t_c5c2245e3b8a84 122-135
+  s_82120e9b499222::t_01eaf69a225b18 9
+src/App.tsx
+  s_82120e9b499222::t_43bcaf14aa57c0 145-146
+  s_82120e9b499222::t_d3d18c92ef343f 624-643
+  s_82120e9b499222::t_4948e9a58fd1cc 313-323
+  s_82120e9b499222::t_9226b1104be46f 906-908
+src/i18n/locales/en.json
+  s_82120e9b499222::t_50c26b67f24a88 152
+  s_82120e9b499222::t_7c2b1832ff30c7 129-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ae95f179bf7b1fbab2817d806e6d7aabe311544c",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
