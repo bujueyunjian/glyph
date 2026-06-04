@@ -97,6 +97,11 @@ describe("buildConcealDecorations", () => {
     expect(concealCount("plain prose", [])).toBe(0);
   });
 
+  it("链接隐藏方括号/圆括号/URL(只留链接文本)", () => {
+    // [text](http://x) → 隐藏 [ ] ( ) + URL,光标不在该行时。
+    expect(concealCount("[text](http://x)", [])).toBeGreaterThanOrEqual(3);
+  });
+
   it("跨段边界节点不产生重复 replace(去重)", () => {
     const doc = "**bold**";
     const state = stateFor(doc);

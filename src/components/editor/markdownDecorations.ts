@@ -138,8 +138,14 @@ export function buildConcealDecorations(
       to,
       enter: (node) => {
         // 跨段边界节点只在起点所在段处理,避免相邻两段各推一条重复 replace。
-        if (node.from < from) return;
-        if (!CONCEAL_NODES.has(node.name) || node.to <= node.from) return;
+        if (node.from < from || node.to <= node.from) return;
+        // 链接里的 URL 也隐藏(只留链接文本,Obsidian 式);但仅限 [文本](url) 形式,
+        // 不碰正文里的裸链接(parent 非 Link)。其余按 CONCEAL_NODES 判定。
+        const conceal =
+          node.name === "URL"
+            ? node.node.parent?.name === "Link"
+            : CONCEAL_NODES.has(node.name);
+        if (!conceal) return;
         // 光标所在行显示原始标记,便于编辑(Live Preview 核心交互)。
         if (cursorLines.has(state.doc.lineAt(node.from).number)) return;
         decorations.push(CONCEAL.range(node.from, node.to));
