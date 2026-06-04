@@ -1,0 +1,25 @@
+src/components/editor/markdownDecorations.test.ts
+  s_82120e9b499222::t_bb939004d30b9f 100-104
+src/__harness__/md.ts
+  s_82120e9b499222::t_825929e551b781 1-44
+md-harness.html
+  s_82120e9b499222::t_825929e551b781 1-3
+src/components/editor/markdownDecorations.ts
+  s_82120e9b499222::t_514c64c955da8f 141-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7e9359f91b701183c69f2d7a4280cb772d72e0e0",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
