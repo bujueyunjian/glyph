@@ -1,0 +1,45 @@
+src/features/lsp/protocol.test.ts
+  s_82120e9b499222::t_65c5993d096dc2 9
+  s_82120e9b499222::t_7361854ca0337d 300-337
+src/components/command/OutlinePanel.tsx
+  s_82120e9b499222::t_43f42d52c7d730 1-96
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_15a4790650070c 88-93
+src/components/workbench/MenuBar.tsx
+  s_82120e9b499222::t_ecde37938fcf83 33
+  s_82120e9b499222::t_e40831100001aa 77
+  s_82120e9b499222::t_c59e49930a15c6 284-287
+src/i18n/locales/en.json
+  s_82120e9b499222::t_65dc6cd83f33b3 88-93
+docs/progress/PROGRESS.md
+  s_82120e9b499222::t_47fcccb9b3449b 77
+src/features/lsp/protocol.ts
+  s_82120e9b499222::t_90a7e9518ef6f9 189-227
+docs/progress/tasks/0045-document-outline-panel.md
+  s_82120e9b499222::t_562a0163877613 1-61
+src/App.tsx
+  s_82120e9b499222::t_f483b412abe0fe 703-728
+  s_82120e9b499222::t_3006d8e01e93e5 182-185
+  s_82120e9b499222::t_adbde90b87b6f6 911-916
+  s_82120e9b499222::t_313fa3e5e605d1 1247-1249
+  s_82120e9b499222::t_2a87fc4b97f44a 1475
+  s_82120e9b499222::t_be93ece955454f 1606-1614
+  s_82120e9b499222::t_1eb02ae39d1112 29
+  s_82120e9b499222::t_bb04039ab7e850 75,79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e53f7a4c4bacf087260af8c7e33745d99efb57bf",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
