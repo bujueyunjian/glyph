@@ -16,6 +16,10 @@ describe("toggleWrap", () => {
   it("空选区也成对插入标记", () => {
     expect(toggleWrap("", "**")).toBe("****");
   });
+
+  it("两段相邻同标记不被误剥(*a* *b* → 再包一层,不破坏)", () => {
+    expect(toggleWrap("*a* *b*", "*")).toBe("**a* *b**");
+  });
 });
 
 describe("toggleLinePrefix", () => {

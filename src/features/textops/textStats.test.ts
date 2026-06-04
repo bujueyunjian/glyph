@@ -18,4 +18,12 @@ describe("countText", () => {
   it("仅空白:0 字", () => {
     expect(countText("   \n  ").words).toBe(0);
   });
+
+  it("CJK 逐字计数(无空格中文)", () => {
+    expect(countText("今天天气很好").words).toBe(6);
+  });
+
+  it("中西混排:CJK 逐字 + 西文按词", () => {
+    expect(countText("你好 world foo").words).toBe(4); // 你 好 + world + foo
+  });
 });

@@ -22,10 +22,11 @@ export function useRecentFiles() {
   const { t } = useTranslation();
   const [recent, setRecent] = useState<string[]>(readStored);
 
-  // 记录损坏时响亮告知(已清空,非静默兜底)。
+  // 记录损坏时响亮告知并真正清空坏数据(使"已清空"成真,且不再每次启动反复告警)。
   useEffect(() => {
     if (bootCorrupted) {
       bootCorrupted = false;
+      writeJson(STORAGE_KEY, []);
       toast.error(t("storage.recentCorrupted"));
     }
   }, [t]);

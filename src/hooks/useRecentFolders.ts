@@ -22,9 +22,11 @@ export function useRecentFolders() {
   const { t } = useTranslation();
   const [recentFolders, setRecentFolders] = useState<string[]>(readStored);
 
+  // 损坏时真正清空坏数据(使"已清空"成真,且不再每次启动反复告警)。
   useEffect(() => {
     if (bootCorrupted) {
       bootCorrupted = false;
+      writeJson(STORAGE_KEY, []);
       toast.error(t("storage.recentFoldersCorrupted"));
     }
   }, [t]);
