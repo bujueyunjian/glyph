@@ -65,6 +65,8 @@ import {
 } from "@/features/markdown/mdFormat";
 import { formatJson, minifyJson } from "@/features/textops/json";
 import { countText } from "@/features/textops/textStats";
+import type { LspEditorContext } from "@/features/lsp/editor";
+import { languageIdForExtension } from "@/features/lsp/servers";
 import {
   getDirName,
   getFileExtension,
@@ -242,6 +244,15 @@ function App() {
   const effectiveActive = focusedPane === "split" ? splitPath : activePath;
   // 按当前文件语言自动连接语言服务器,状态栏显示连接态。
   const lspStatus = useLsp(effectiveActive, rootPath);
+  // 接入聚焦编辑器的 LSP 上下文(memo 稳定,避免每渲染重挂 didOpen)。
+  const lspCtx = useMemo<LspEditorContext | undefined>(() => {
+    if (lspStatus.serverId == null || !effectiveActive) return undefined;
+    return {
+      serverId: lspStatus.serverId,
+      uri: `file://${effectiveActive}`,
+      languageId: languageIdForExtension(getFileExtension(effectiveActive)),
+    };
+  }, [lspStatus.serverId, effectiveActive]);
 
   const doSave = useCallback(() => {
     if (effectiveActive) void save(effectiveActive);
@@ -1141,6 +1152,11 @@ function App() {
                         extension={getFileExtension(tab.path)}
                         themeKind={activeTheme.kind}
                         settings={settings}
+                        lsp={
+                          focusedPane === "main" && tab.path === effectiveActive
+                            ? lspCtx
+                            : undefined
+                        }
                         onDocChange={() => handleDocChange(tab.path, "main")}
                       />
                     </div>
@@ -1169,6 +1185,7 @@ function App() {
                     extension={getFileExtension(splitPath)}
                     themeKind={activeTheme.kind}
                     settings={settings}
+                    lsp={focusedPane === "split" ? lspCtx : undefined}
                     onDocChange={() => handleDocChange(splitPath, "split")}
                   />
                 </Suspense>

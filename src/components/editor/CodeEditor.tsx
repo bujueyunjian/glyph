@@ -10,6 +10,10 @@ import type { ThemeKind } from "@/theme/themes";
 import type { EditorSettings } from "@/types/settingsTypes";
 import { loadLanguageExtension } from "./languageRegistry";
 import { markdownConceal } from "./markdownDecorations";
+import {
+  lspEditorExtensions,
+  type LspEditorContext,
+} from "@/features/lsp/editor";
 
 interface CodeEditorProps {
   /** 初始内容(仅挂载时取一次);文档之后由 CodeMirror 自己持有。 */
@@ -24,6 +28,8 @@ interface CodeEditorProps {
   settings: EditorSettings;
   /** 用户编辑时回调(只用于标脏,不回流文档内容)。 */
   onDocChange: () => void;
+  /** 语言服务器上下文;有则接补全/诊断(需 useMemo 稳定,避免每渲染重挂)。 */
+  lsp?: LspEditorContext;
 }
 
 // CodeMirror 6 编辑器(纯展示)。关键:**不把文档内容回流到 React state**——
@@ -40,6 +46,7 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
       themeKind,
       settings,
       onDocChange,
+      lsp,
     },
     ref,
   ) {
@@ -89,8 +96,10 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
         ...(isMarkdown && settings.markdownLivePreview
           ? [markdownConceal]
           : []),
+        // 语言服务器:补全 + 诊断 + didOpen/didChange(lsp 上下文就绪时)。
+        ...(lsp ? [lspEditorExtensions(lsp)] : []),
       ];
-    }, [languageExt, settings, extension]);
+    }, [languageExt, settings, extension, lsp]);
 
     // 行号开关走 basicSetup(与默认项合并,其余特性不变)。
     const basicSetup = useMemo(

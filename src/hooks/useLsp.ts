@@ -9,6 +9,8 @@ export type LspState = "off" | "starting" | "ready" | "unavailable";
 export interface LspStatus {
   state: LspState;
   name?: string;
+  /** 就绪时的服务器 id,供编辑器接补全/诊断。 */
+  serverId?: number;
 }
 
 // 按当前文件语言自动连接语言服务器,返回连接状态供状态栏显示。
@@ -39,7 +41,11 @@ export function useLsp(
     const key = `${server.name}@${root}`;
     // 同服务器同根已在跑 → 复用,不重启。
     if (current.current?.key === key) {
-      setStatus({ state: "ready", name: server.name });
+      setStatus({
+        state: "ready",
+        name: server.name,
+        serverId: current.current.id,
+      });
       return;
     }
     if (current.current) {
@@ -56,7 +62,7 @@ export function useLsp(
           return;
         }
         current.current = { id, key };
-        setStatus({ state: "ready", name: server.name });
+        setStatus({ state: "ready", name: server.name, serverId: id });
       })
       .catch(() => {
         // 未安装/启动失败:预期空态(很多用户没装),静默显示未连接,不弹红 toast。

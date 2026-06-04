@@ -43,3 +43,27 @@ function clangd(): LanguageServer {
 export function serverForExtension(ext: string): LanguageServer | null {
   return SERVERS[ext] ?? null;
 }
+
+// 扩展名 → LSP languageId(didOpen 用)。未知归 "plaintext"。
+const LANGUAGE_ID: Record<string, string> = {
+  rs: "rust",
+  ts: "typescript",
+  tsx: "typescriptreact",
+  js: "javascript",
+  jsx: "javascriptreact",
+  mjs: "javascript",
+  cjs: "javascript",
+  py: "python",
+  pyw: "python",
+  go: "go",
+  c: "c",
+  h: "c",
+  cpp: "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  hpp: "cpp",
+};
+
+export function languageIdForExtension(ext: string): string {
+  return LANGUAGE_ID[ext] ?? "plaintext";
+}
