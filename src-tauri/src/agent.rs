@@ -70,6 +70,17 @@ fn response_for(message: &Value, id: u64) -> Option<Result<Value, String>> {
     Some(Ok(message.get("result").cloned().unwrap_or(Value::Null)))
 }
 
+// 解析 agent 工作目录:优先用调用方传入的工作区根(收敛 agent 默认作用域到用户打开的工程),
+// 缺省才回退到进程当前目录。安全考量见 ADR-0009:不让 agent 默认拿到过宽的启动目录(如打包 app 的 `/`)。
+fn resolve_cwd(cwd: Option<String>) -> String {
+    match cwd {
+        Some(p) if !p.trim().is_empty() => p,
+        _ => std::env::current_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default(),
+    }
+}
+
 fn write_line(stdin: &mut ChildStdin, line: &str) -> Result<(), String> {
     stdin
         .write_all(line.as_bytes())
@@ -115,14 +126,12 @@ fn agent_turn<R: BufRead>(
     reader: &mut R,
     stdin: &mut ChildStdin,
     prompt: &str,
+    cwd: &str,
     answer: &mut String,
 ) -> Result<(), String> {
     write_line(stdin, &rpc_request(0, "initialize", client_init_params()))?;
     pump_until(reader, stdin, 0, answer)?;
 
-    let cwd = std::env::current_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_default();
     write_line(
         stdin,
         &rpc_request(1, "session/new", json!({ "cwd": cwd, "mcpServers": [] })),
@@ -185,7 +194,12 @@ fn spawn_agent(agent_cmd: &str) -> Result<Child, String> {
 
 // 一次性向 ACP agent 发 prompt 取完整文本响应。agent_cmd 如 "claude-agent-acp"(用户已装的适配器)。
 #[tauri::command]
-pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String> {
+pub fn agent_oneshot(
+    agent_cmd: String,
+    prompt: String,
+    cwd: Option<String>,
+) -> Result<String, String> {
+    let cwd = resolve_cwd(cwd);
     let mut child = spawn_agent(&agent_cmd)?;
     let mut stdin = child
         .stdin
@@ -198,7 +212,7 @@ pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String
     let mut reader = BufReader::new(stdout);
     let mut answer = String::new();
 
-    let outcome = agent_turn(&mut reader, &mut stdin, &prompt, &mut answer);
+    let outcome = agent_turn(&mut reader, &mut stdin, &prompt, &cwd, &mut answer);
     kill(&mut child);
     outcome.map(|()| answer)
 }
@@ -242,15 +256,13 @@ fn stream_turn<R: BufRead>(
     reader: &mut R,
     stdin: &mut ChildStdin,
     prompt: &str,
+    cwd: &str,
     turn_id: u64,
 ) -> Result<(), String> {
     let mut scratch = String::new();
     write_line(stdin, &rpc_request(0, "initialize", client_init_params()))?;
     pump_until(reader, stdin, 0, &mut scratch)?;
 
-    let cwd = std::env::current_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_default();
     write_line(
         stdin,
         &rpc_request(1, "session/new", json!({ "cwd": cwd, "mcpServers": [] })),
@@ -278,6 +290,7 @@ fn run_stream(
     turn_id: u64,
     agent_cmd: &str,
     prompt: &str,
+    cwd: &str,
 ) -> Result<(), String> {
     let mut child = spawn_agent(agent_cmd)?;
     let mut stdin = child
@@ -306,7 +319,7 @@ fn run_stream(
     // 登记子进程供取消;turn 自然结束/出错后移除并回收(取消可能已先移除)。
     children.lock().unwrap().insert(turn_id, child);
     let mut reader = BufReader::new(stdout);
-    let outcome = stream_turn(app, &mut reader, &mut stdin, prompt, turn_id);
+    let outcome = stream_turn(app, &mut reader, &mut stdin, prompt, cwd, turn_id);
     if let Some(mut child) = children.lock().unwrap().remove(&turn_id) {
         kill(&mut child);
     }
@@ -331,18 +344,20 @@ pub fn agent_stream(
     agent_cmd: String,
     prompt: String,
     turn_id: u64,
+    cwd: Option<String>,
 ) {
     let children = Arc::clone(&registry.children);
-    std::thread::spawn(
-        move || match run_stream(&app, &children, turn_id, &agent_cmd, &prompt) {
+    let cwd = resolve_cwd(cwd);
+    std::thread::spawn(move || {
+        match run_stream(&app, &children, turn_id, &agent_cmd, &prompt, &cwd) {
             Ok(()) => {
                 let _ = app.emit("agent://done", json!({ "turnId": turn_id }));
             }
             Err(e) => {
                 let _ = app.emit("agent://error", json!({ "turnId": turn_id, "message": e }));
             }
-        },
-    );
+        }
+    });
 }
 
 // 取消进行中的流式会话:终止并回收其子进程(关闭对话框/开新会话时调用)。
@@ -355,8 +370,19 @@ pub fn agent_cancel(registry: State<'_, AgentRegistry>, turn_id: u64) {
 
 #[cfg(test)]
 mod tests {
-    use super::{client_init_params, deny_reply, extract_agent_text, response_for, rpc_request};
+    use super::{
+        client_init_params, deny_reply, extract_agent_text, resolve_cwd, response_for, rpc_request,
+    };
     use serde_json::{json, Value};
+
+    // 工作目录收敛:传入工作区根则用它;缺省/空白回退进程目录(非空)。
+    #[test]
+    fn resolves_cwd_prefers_workspace_root() {
+        assert_eq!(resolve_cwd(Some("/work/proj".to_string())), "/work/proj");
+        assert!(!resolve_cwd(None).is_empty());
+        assert!(!resolve_cwd(Some("   ".to_string())).is_empty());
+        assert_ne!(resolve_cwd(Some("  ".to_string())), "  ");
+    }
 
     // 安全边界回归守卫:Glyph 绝不向 agent 授予 fs/terminal 能力(改 true 即测试失败)。
     #[test]

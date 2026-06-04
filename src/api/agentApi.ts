@@ -6,18 +6,21 @@ import { call } from "./ipc";
 export function agentOneshot(
   agentCmd: string,
   prompt: string,
+  cwd: string | null,
 ): Promise<string> {
-  return call<string>("agent_oneshot", { agentCmd, prompt });
+  return call<string>("agent_oneshot", { agentCmd, prompt, cwd });
 }
 
 // 流式提问:turnId 由前端分配,用于事件过滤与取消(见 App 的 agent 监听)。
 // 响应分块经 `agent://chunk`(带 turnId)回流;命令即时返回,不阻塞。
+// cwd 为打开的工作区根:把 agent 默认作用域收敛到用户打开的工程(数据安全,见 ADR-0009)。
 export function agentStream(
   agentCmd: string,
   prompt: string,
   turnId: number,
+  cwd: string | null,
 ): Promise<null> {
-  return call<null>("agent_stream", { agentCmd, prompt, turnId });
+  return call<null>("agent_stream", { agentCmd, prompt, turnId, cwd });
 }
 
 // 取消进行中的流式会话:终止并回收其子进程(关闭对话框/开新会话时调用)。

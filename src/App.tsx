@@ -227,7 +227,8 @@ function App() {
         agentTurnRef.current = turn; // 先于发起设置,事件抵达即可匹配(无竞态丢块)
         setAgentResult(""); // 清空,等待流式分块
         setAgentBusy(true);
-        void agentStream(cmd, prompt, turn).catch((err) => {
+        // cwd 传打开的工作区根:把 agent 默认作用域钉到用户打开的工程(数据安全,ADR-0009)。
+        void agentStream(cmd, prompt, turn, rootPath ?? null).catch((err) => {
           if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
           agentTurnRef.current = null;
           setAgentBusy(false);
@@ -235,7 +236,7 @@ function App() {
         });
       })();
     },
-    [t, ensureAgentConsent],
+    [t, ensureAgentConsent, rootPath],
   );
 
   // 常驻 agent 事件监听:按当前 turn 过滤,关闭后不复活对话框(prev===null 即忽略)。
