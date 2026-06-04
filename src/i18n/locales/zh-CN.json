@@ -62,10 +62,11 @@
   },
   "quickOpen": {
     "title": "快速打开",
-    "placeholder": "输入文件名搜索,或 : 跳到行号",
+    "placeholder": "输入文件名搜索,: 跳行,@ 跳符号",
     "empty": "无匹配文件",
     "goToLine": "前往第 {{line}} 行",
-    "lineHint": "输入要跳转的行号"
+    "lineHint": "输入要跳转的行号",
+    "symbolEmpty": "无匹配符号(需语言服务器)"
   },
   "search": {
     "title": "跨文件搜索",

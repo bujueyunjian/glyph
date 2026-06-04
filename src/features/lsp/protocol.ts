@@ -114,6 +114,42 @@ export function toCmChanges(edits: unknown, doc: Text): CmChange[] {
   return out;
 }
 
+export interface DocSymbol {
+  name: string;
+  line: number;
+  kind?: number;
+}
+
+// LSP documentSymbol 响应 → 扁平符号列表(兼容层级 DocumentSymbol[] 与扁平 SymbolInformation[])。
+export function flattenSymbols(result: unknown): DocSymbol[] {
+  if (!Array.isArray(result)) return [];
+  const out: DocSymbol[] = [];
+  const visit = (nodes: unknown[]) => {
+    for (const raw of nodes) {
+      const n = raw as {
+        name?: unknown;
+        kind?: unknown;
+        range?: { start?: LspPosition };
+        selectionRange?: { start?: LspPosition };
+        location?: { range?: { start?: LspPosition } };
+        children?: unknown;
+      };
+      const start =
+        n.selectionRange?.start ?? n.range?.start ?? n.location?.range?.start;
+      if (typeof n.name === "string" && start) {
+        out.push({
+          name: n.name,
+          line: start.line,
+          kind: typeof n.kind === "number" ? n.kind : undefined,
+        });
+      }
+      if (Array.isArray(n.children)) visit(n.children);
+    }
+  };
+  visit(result);
+  return out;
+}
+
 export interface FileEdits {
   path: string;
   edits: unknown[];

@@ -62,10 +62,11 @@
   },
   "quickOpen": {
     "title": "Quick Open",
-    "placeholder": "Search files, or : to go to a line",
+    "placeholder": "Search files, : for line, @ for symbol",
     "empty": "No matching file",
     "goToLine": "Go to line {{line}}",
-    "lineHint": "Enter a line number"
+    "lineHint": "Enter a line number",
+    "symbolEmpty": "No matching symbol (needs language server)"
   },
   "search": {
     "title": "Search in Files",

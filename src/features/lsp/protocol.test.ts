@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   definitionTarget,
+  flattenSymbols,
   hoverText,
   offsetToPosition,
   positionToOffset,
@@ -193,5 +194,46 @@ describe("workspaceEditChanges", () => {
   it("空/非法返回空", () => {
     expect(workspaceEditChanges(null)).toEqual([]);
     expect(workspaceEditChanges({})).toEqual([]);
+  });
+});
+
+describe("flattenSymbols", () => {
+  it("层级 DocumentSymbol 递归扁平(取 selectionRange)", () => {
+    const result = [
+      {
+        name: "main",
+        kind: 12,
+        selectionRange: { start: { line: 0, character: 3 } },
+        children: [
+          {
+            name: "x",
+            kind: 13,
+            selectionRange: { start: { line: 1, character: 8 } },
+          },
+        ],
+      },
+    ];
+    expect(flattenSymbols(result)).toEqual([
+      { name: "main", line: 0, kind: 12 },
+      { name: "x", line: 1, kind: 13 },
+    ]);
+  });
+
+  it("扁平 SymbolInformation(取 location.range)", () => {
+    const result = [
+      {
+        name: "foo",
+        kind: 12,
+        location: { range: { start: { line: 5, character: 0 } } },
+      },
+    ];
+    expect(flattenSymbols(result)).toEqual([
+      { name: "foo", line: 5, kind: 12 },
+    ]);
+  });
+
+  it("空/非数组返回空", () => {
+    expect(flattenSymbols(null)).toEqual([]);
+    expect(flattenSymbols([])).toEqual([]);
   });
 });

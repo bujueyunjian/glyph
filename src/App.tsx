@@ -1435,6 +1435,8 @@ function App() {
         open={quickOpenOpen}
         onOpenChange={setQuickOpenOpen}
         rootPath={rootPath}
+        lspServerId={lspStatus.serverId}
+        activeUri={effectiveActive ? `file://${effectiveActive}` : undefined}
         onOpenFile={openInFocused}
         onGoToLine={goToLine}
       />
