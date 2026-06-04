@@ -1,0 +1,29 @@
+src/features/textops/textStats.ts
+  s_82120e9b499222::t_bc8ae950bb8dd8 8-11,14-17,19
+src/features/textops/textStats.test.ts
+  s_82120e9b499222::t_897dae79904198 21-28
+src/features/markdown/mdFormat.test.ts
+  s_82120e9b499222::t_656ac3c93e75fd 19-22
+src/hooks/useRecentFiles.ts
+  s_82120e9b499222::t_ac85b321cdf3b4 25,29
+src/hooks/useRecentFolders.ts
+  s_82120e9b499222::t_2fcc0caca3075f 25,29
+src/features/markdown/mdFormat.ts
+  s_82120e9b499222::t_50068b1b1b5f17 5-6,8,12-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0f0a2bec487bfeb7ad52b4924c9eeefcfbee0483",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
