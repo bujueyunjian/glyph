@@ -1,0 +1,42 @@
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_0323d6bdd42380 119-121
+src/features/agent/mcpConfig.ts
+  s_82120e9b499222::t_326c9c4a5748f2 1-59
+src/components/command/AgentPanel.tsx
+  s_82120e9b499222::t_7341d5c13af6c2 28-31
+  s_82120e9b499222::t_8633c498f90171 87
+  s_82120e9b499222::t_51416179b340df 8-14
+  s_82120e9b499222::t_c9b4eaeff967d3 73-74,76-86,88-95
+  s_82120e9b499222::t_a6b49fe0ada59c 75
+docs/progress/PROGRESS.md
+  s_82120e9b499222::t_933a08fcadf26e 81
+src/api/agentApi.ts
+  s_82120e9b499222::t_3ab43860abae39 2,6,12,14,25,27-33
+src/i18n/locales/en.json
+  s_82120e9b499222::t_4a11482535349f 119-121
+src/App.tsx
+  s_82120e9b499222::t_d2fbce5ca0e04d 244-248
+  s_82120e9b499222::t_2a86751bf2fc11 1650-1653
+  s_82120e9b499222::t_55747a2d47407b 197-215
+  s_82120e9b499222::t_a283c424dd957b 25
+  s_82120e9b499222::t_a49fe835db0a84 258-265
+  s_82120e9b499222::t_6c01ead2fe6977 273
+src/features/agent/mcpConfig.test.ts
+  s_82120e9b499222::t_9f4cb3aa850e47 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1c96ab0ea0db696f68b53613afa27a2aade8ea78",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
