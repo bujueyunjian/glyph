@@ -1,0 +1,47 @@
+src/App.tsx
+  s_82120e9b499222::t_be5345f8da3792 68-69
+  s_82120e9b499222::t_a18b49a5b6e40a 1156
+  s_82120e9b499222::t_c9839767638f82 1188
+  s_82120e9b499222::t_c253596b3a8669 247-255
+  s_82120e9b499222::t_43f421a7e25f5b 1155,1157-1159
+src/features/lsp/protocol.ts
+  s_82120e9b499222::t_be796e397431cf 1-91,96-120
+  s_82120e9b499222::t_a18b49a5b6e40a 92-95
+pnpm-lock.yaml
+  ai_agent 11-13,74-76,115,317-319,2628-2634,2649,2657,2665,2682,2705,2723,2744,2762,2771,3743,3745,3767,3774
+src/features/lsp/editor.ts
+  s_82120e9b499222::t_9caed5334733c9 1-142
+src/components/editor/CodeEditor.tsx
+  s_82120e9b499222::t_d8fd6de769b314 99-100,102
+  s_82120e9b499222::t_70127a2b3ae1ee 13-16
+  s_82120e9b499222::t_dfd93812239425 31-32
+  s_82120e9b499222::t_40c5d79348f13e 49
+src/features/lsp/protocol.test.ts
+  s_82120e9b499222::t_33b2fbb2c877d0 1-84
+src/hooks/useLsp.ts
+  s_82120e9b499222::t_a18b49a5b6e40a 44-48
+  s_82120e9b499222::t_86f7fc814acbae 12-13
+  s_82120e9b499222::t_eb5ccbe6bb2827 65
+src/features/lsp/servers.ts
+  s_82120e9b499222::t_df5abad9cdca5c 46-69
+docs/progress/tasks/0042-lsp-in-editor.md
+  s_82120e9b499222::t_b97944ea22798d 1-22
+package.json
+  s_82120e9b499222::t_6cfd59b31b9535 28,49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "965afe0d87f2fcc6de3d9db814cea4625dbc61d4",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
