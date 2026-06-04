@@ -1,0 +1,37 @@
+src/features/lsp/servers.ts
+  s_82120e9b499222::t_a9e9c06c86d1ac 1-45
+src/hooks/useLsp.ts
+  s_82120e9b499222::t_ebbede4bf18bea 1-83
+src/components/workbench/StatusBar.tsx
+  s_82120e9b499222::t_6807e68ab4d272 3-4,11-12,18-23
+  s_82120e9b499222::t_5b9f281dbb9f33 34
+  s_82120e9b499222::t_c09f3463235485 55-69
+src/api/lspApi.ts
+  s_82120e9b499222::t_441dfaf47a9550 1-31
+src/features/lsp/servers.test.ts
+  s_82120e9b499222::t_0b85cf8c40ca25 1-22
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_67c396e64c9bcc 114-116
+src/i18n/locales/en.json
+  s_82120e9b499222::t_e2aa837b6b0d05 114-116
+src/App.tsx
+  s_82120e9b499222::t_bba48a33053764 243-244
+  s_82120e9b499222::t_7c53e9ba760de8 1062
+  s_82120e9b499222::t_36c62893bba8e3 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5116b42aef9acf29016dc6308774c733381c2440",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
