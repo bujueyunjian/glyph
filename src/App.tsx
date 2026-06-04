@@ -67,6 +67,8 @@ import { formatJson, minifyJson } from "@/features/textops/json";
 import { countText } from "@/features/textops/textStats";
 import type { LspEditorContext } from "@/features/lsp/editor";
 import { languageIdForExtension } from "@/features/lsp/servers";
+import { definitionTarget, offsetToPosition } from "@/features/lsp/protocol";
+import { lspRequest } from "@/api/lspApi";
 import {
   getDirName,
   getFileExtension,
@@ -459,6 +461,26 @@ function App() {
     [openPath],
   );
 
+  // 转到定义:对聚焦编辑器光标处请求 definition,打开目标文件并跳转(复用 openHit)。
+  const goToDefinition = useCallback(async () => {
+    const view = activeView();
+    if (!view || lspStatus.serverId == null || !effectiveActive) return;
+    let result: unknown;
+    try {
+      result = await lspRequest(lspStatus.serverId, "textDocument/definition", {
+        textDocument: { uri: `file://${effectiveActive}` },
+        position: offsetToPosition(
+          view.state.doc,
+          view.state.selection.main.head,
+        ),
+      });
+    } catch {
+      return;
+    }
+    const target = definitionTarget(result);
+    if (target) openHit(target.path, target.line + 1); // LSP 0 基行 → openHit 1 基
+  }, [activeView, lspStatus.serverId, effectiveActive, openHit]);
+
   // 编辑回调:标脏 + (预览开启时)防抖刷新 Markdown 预览内容(不阻塞打字热路径)。
   const handleDocChange = useCallback(
     (path: string, pane: "main" | "split") => {
@@ -671,6 +693,17 @@ function App() {
         shortcut: "Ctrl/⌘ ⇧ K",
         perform: () => void runLineCommand("deleteLine"),
       },
+      ...(lspStatus.serverId != null
+        ? [
+            {
+              id: "lsp.goToDefinition",
+              title: t("lsp.goToDefinition"),
+              group: t("menu.edit"),
+              shortcut: "F12",
+              perform: () => void goToDefinition(),
+            },
+          ]
+        : []),
       {
         id: "textops.wordCount",
         title: t("textops.wordCount"),
@@ -848,6 +881,8 @@ function App() {
       runLineCommand,
       showWordCount,
       transformWholeDoc,
+      lspStatus.serverId,
+      goToDefinition,
     ],
   );
 
@@ -870,6 +905,12 @@ function App() {
   // 全局快捷键:打开/保存/另存为/命令面板/关闭标签。
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // F12 转到定义(非 ctrl/meta 键,先于下面的修饰键早返回处理)。
+      if (event.key === "F12" && lspStatus.serverId != null) {
+        event.preventDefault();
+        void goToDefinition();
+        return;
+      }
       if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
       if (event.shiftKey && key === "p") {
@@ -929,6 +970,8 @@ function App() {
     syncSplitIntoMain,
     toggleSplit,
     setFocusedPane,
+    lspStatus.serverId,
+    goToDefinition,
   ]);
 
   // 会话恢复:启动时一次,打开上次会话的文件(缺=空态;坏 JSON 已在 loadSession 响亮报错)。

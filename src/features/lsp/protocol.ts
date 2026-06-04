@@ -86,6 +86,38 @@ export function hoverText(result: unknown): string | null {
   return text.trim() || null;
 }
 
+export interface DefinitionTarget {
+  path: string;
+  line: number;
+  character: number;
+}
+
+// LSP definition 响应 → 目标文件 + 位置。兼容 Location / LocationLink / 其数组,取第一个。
+export function definitionTarget(result: unknown): DefinitionTarget | null {
+  const loc = Array.isArray(result) ? result[0] : result;
+  if (!loc || typeof loc !== "object") return null;
+  const l = loc as {
+    uri?: unknown;
+    targetUri?: unknown;
+    range?: { start?: LspPosition };
+    targetSelectionRange?: { start?: LspPosition };
+    targetRange?: { start?: LspPosition };
+  };
+  const uri =
+    typeof l.uri === "string"
+      ? l.uri
+      : typeof l.targetUri === "string"
+        ? l.targetUri
+        : null;
+  const start =
+    l.range?.start ?? l.targetSelectionRange?.start ?? l.targetRange?.start;
+  if (!uri || !start) return null;
+  const path = uri.startsWith("file://")
+    ? decodeURIComponent(uri.slice("file://".length))
+    : uri;
+  return { path, line: start.line, character: start.character };
+}
+
 export type CmSeverity = "error" | "warning" | "info" | "hint";
 
 export interface CmDiagnostic {

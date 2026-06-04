@@ -112,7 +112,8 @@
     "commands": "命令面板"
   },
   "lsp": {
-    "unavailable": "{{name}} 未连接(未安装或启动失败)"
+    "unavailable": "{{name}} 未连接(未安装或启动失败)",
+    "goToDefinition": "转到定义"
   },
   "file": {
     "open": "打开",

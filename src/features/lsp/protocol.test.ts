@@ -2,6 +2,7 @@ import { Text } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
 import {
+  definitionTarget,
   hoverText,
   offsetToPosition,
   positionToOffset,
@@ -97,5 +98,39 @@ describe("hoverText", () => {
     expect(hoverText(null)).toBeNull();
     expect(hoverText({ contents: "  " })).toBeNull();
     expect(hoverText({})).toBeNull();
+  });
+});
+
+describe("definitionTarget", () => {
+  it("Location:uri 去 file:// + 取 range.start", () => {
+    const r = {
+      uri: "file:///work/src/lib.rs",
+      range: { start: { line: 9, character: 4 } },
+    };
+    expect(definitionTarget(r)).toEqual({
+      path: "/work/src/lib.rs",
+      line: 9,
+      character: 4,
+    });
+  });
+
+  it("LocationLink 数组:取首个 targetUri + targetSelectionRange", () => {
+    const r = [
+      {
+        targetUri: "file:///work/a.rs",
+        targetSelectionRange: { start: { line: 1, character: 0 } },
+      },
+    ];
+    expect(definitionTarget(r)).toEqual({
+      path: "/work/a.rs",
+      line: 1,
+      character: 0,
+    });
+  });
+
+  it("空/非法返回 null", () => {
+    expect(definitionTarget(null)).toBeNull();
+    expect(definitionTarget([])).toBeNull();
+    expect(definitionTarget({ uri: "file:///x" })).toBeNull();
   });
 });

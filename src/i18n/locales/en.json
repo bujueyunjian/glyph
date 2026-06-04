@@ -112,7 +112,8 @@
     "commands": "Commands"
   },
   "lsp": {
-    "unavailable": "{{name}} not connected (not installed or failed to start)"
+    "unavailable": "{{name}} not connected (not installed or failed to start)",
+    "goToDefinition": "Go to Definition"
   },
   "file": {
     "open": "Open",
