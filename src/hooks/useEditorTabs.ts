@@ -41,12 +41,13 @@ export function useEditorTabs(
   }, []);
 
   // 按已知路径打开:已打开则仅激活,否则读盘 + 新建标签 + 激活。
+  // 返回是否成功(标签已存在),供分屏等调用方在成功后才指向该路径(防悬空)。
   const openPath = useCallback(
-    async (path: string, activateTab = true) => {
+    async (path: string, activateTab = true): Promise<boolean> => {
       if (tabsRef.current.some((tab) => tab.path === path)) {
         if (activateTab) activate(path);
         onFileOpened?.(path);
-        return;
+        return true;
       }
       try {
         const content = await openFile(path);
@@ -56,8 +57,10 @@ export function useEditorTabs(
         ]);
         if (activateTab) activate(path);
         onFileOpened?.(path);
+        return true;
       } catch (err) {
         toast.error(t("file.openFailed", { msg: (err as Error).message }));
+        return false;
       }
     },
     [activate, writeTabs, t, onFileOpened],
@@ -166,11 +169,12 @@ export function useEditorTabs(
     [getContent, writeTabs, t],
   );
 
+  // 另存为:成功返回新路径(供调用方同步 splitPath 等指向旧路径的状态),取消/失败返回 null。
   const saveAs = useCallback(
-    async (path: string) => {
-      if (!path) return;
+    async (path: string): Promise<string | null> => {
+      if (!path) return null;
       const picked = await saveDialog({ defaultPath: path });
-      if (typeof picked !== "string") return; // 用户取消
+      if (typeof picked !== "string") return null; // 用户取消
       const content = getContent(path);
       try {
         await saveFile(picked, content);
@@ -184,8 +188,10 @@ export function useEditorTabs(
         );
         activate(picked);
         toast.success(t("file.saved"));
+        return picked;
       } catch (err) {
         toast.error(t("file.saveFailed", { msg: (err as Error).message }));
+        return null;
       }
     },
     [getContent, writeTabs, activate, t],

@@ -81,18 +81,37 @@ function App() {
   const editorRefs = useRef<Map<string, ReactCodeMirrorRef | null>>(new Map());
   const splitRefs = useRef<Map<string, ReactCodeMirrorRef | null>>(new Map());
   const focusedPaneRef = useRef<"main" | "split">("main");
-  // 读某文件最新内容:优先聚焦面板的实例,缺失则回退另一面板。
-  // 兜底回退避免「聚焦分屏时读主面板独占的标签」误得空串 → 防覆盖丢数据。
+  // 同一文件主+分屏双开时记录"最近在哪个面板编辑过",保存按它取实例,
+  // 确保写盘的是最新编辑(而非聚焦碰巧落在的、未编辑的另一面板的陈旧内容)。
+  const lastEditedPaneRef = useRef<Map<string, "main" | "split">>(new Map());
+  // 读某文件最新内容:优先最近编辑过的面板,其次聚焦面板,再回退另一面板。
+  // 三级兜底避免读到陈旧/空内容 → 防覆盖丢数据。
   const getContent = useCallback((path: string) => {
-    const order =
-      focusedPaneRef.current === "split"
-        ? [splitRefs, editorRefs]
-        : [editorRefs, splitRefs];
+    const edited = lastEditedPaneRef.current.get(path);
+    const preferSplit =
+      edited === "split" ||
+      (edited === undefined && focusedPaneRef.current === "split");
+    const order = preferSplit
+      ? [splitRefs, editorRefs]
+      : [editorRefs, splitRefs];
     for (const refs of order) {
       const view = refs.current.get(path)?.view;
       if (view) return view.state.doc.toString();
     }
     return "";
+  }, []);
+
+  // 拆分屏前把分屏实例内容写回主面板实例,使分屏拆除后主面板持最新内容(防丢编辑)。
+  const syncSplitIntoMain = useCallback((path: string) => {
+    const splitView = splitRefs.current.get(path)?.view;
+    const mainView = editorRefs.current.get(path)?.view;
+    if (!splitView || !mainView) return;
+    const splitText = splitView.state.doc.toString();
+    if (splitText === mainView.state.doc.toString()) return;
+    mainView.dispatch({
+      changes: { from: 0, to: mainView.state.doc.length, insert: splitText },
+    });
+    lastEditedPaneRef.current.set(path, "main");
   }, []);
 
   const { recent, addRecent, clearRecent } = useRecentFiles();
@@ -213,15 +232,26 @@ function App() {
     if (effectiveActive) void save(effectiveActive);
   }, [effectiveActive, save]);
   const doSaveAs = useCallback(() => {
-    if (effectiveActive) void saveAs(effectiveActive);
+    if (!effectiveActive) return;
+    const old = effectiveActive;
+    void saveAs(old).then((picked) => {
+      if (!picked || picked === old) return;
+      // 路径已变:同步 splitPath 与 last-edited 记录,避免指向不存在的旧路径(防悬空空写)。
+      setSplitPath((cur) => (cur === old ? picked : cur));
+      const pane = lastEditedPaneRef.current.get(old);
+      lastEditedPaneRef.current.delete(old);
+      if (pane) lastEditedPaneRef.current.set(picked, pane);
+    });
   }, [effectiveActive, saveAs]);
 
   // 打开文件到聚焦面板:分屏聚焦则开进分屏(不动主面板激活),否则开进主面板。
   const openInFocused = useCallback(
     (path: string) => {
       if (focusedPaneRef.current === "split") {
-        void openPath(path, false);
-        setSplitPath(path);
+        // 仅在成功打开(标签确已存在)后才指向分屏,避免失败时 splitPath 悬空 → 空写覆盖。
+        void openPath(path, false).then((ok) => {
+          if (ok) setSplitPath(path);
+        });
       } else {
         void openPath(path);
       }
@@ -229,21 +259,22 @@ function App() {
     [openPath],
   );
 
-  // 切换分屏:已开则关(回主面板),否则把当前文件开进分屏。
+  // 切换分屏:已开则关(关前把分屏编辑写回主面板,防丢),否则把当前文件开进分屏。
   const toggleSplit = useCallback(() => {
-    setSplitPath((cur) => {
-      if (cur !== null) {
-        setFocusedPane("main");
-        return null;
-      }
-      return activePath;
-    });
-  }, [activePath, setFocusedPane]);
+    if (splitPath !== null) {
+      syncSplitIntoMain(splitPath);
+      setSplitPath(null);
+      setFocusedPane("main");
+    } else if (activePath !== null) {
+      setSplitPath(activePath);
+    }
+  }, [splitPath, activePath, setFocusedPane, syncSplitIntoMain]);
 
   // 关闭标签并同步:若该文件正在分屏显示,一并关掉分屏视图。
   const closeTabSynced = useCallback(
     (path: string) => {
-      closeTab(path);
+      closeTab(path); // closeTab 内部经 getContent 取最新内容做撤销快照
+      lastEditedPaneRef.current.delete(path);
       setSplitPath((cur) => (cur === path ? null : cur));
     },
     [closeTab],
@@ -404,7 +435,8 @@ function App() {
 
   // 编辑回调:标脏 + (预览开启时)防抖刷新 Markdown 预览内容(不阻塞打字热路径)。
   const handleDocChange = useCallback(
-    (path: string) => {
+    (path: string, pane: "main" | "split") => {
+      lastEditedPaneRef.current.set(path, pane); // 记录最近编辑面板,保存取对实例
       markDirty(path);
       if (previewOpen && path === activePath) {
         window.clearTimeout(previewTimerRef.current);
@@ -837,7 +869,8 @@ function App() {
       } else if (key === "w") {
         if (effectiveActive) {
           event.preventDefault();
-          if (focusedPane === "split") {
+          if (focusedPane === "split" && splitPath) {
+            syncSplitIntoMain(splitPath); // 关分屏前把编辑写回主面板,防丢
             setSplitPath(null);
             setFocusedPane("main");
           } else {
@@ -866,6 +899,8 @@ function App() {
     activePath,
     effectiveActive,
     focusedPane,
+    splitPath,
+    syncSplitIntoMain,
     toggleSplit,
     setFocusedPane,
   ]);
@@ -905,13 +940,19 @@ function App() {
         .head;
       if (head != null) cursors[tab.path] = head;
     }
+    // 分屏中文件的光标取自分屏实例(主面板的同名实例未被在分屏中编辑)。
+    if (splitPath) {
+      const splitHead =
+        splitRefs.current.get(splitPath)?.view?.state.selection.main.head;
+      if (splitHead != null) cursors[splitPath] = splitHead;
+    }
     saveSession(
       tabs.map((tab) => tab.path),
       activePath,
       cursors,
       rootPath,
     );
-  }, [tabs, activePath, rootPath, saveSession]);
+  }, [tabs, activePath, splitPath, rootPath, saveSession]);
 
   // 文件监听:rootPath 变更则监听工作区,fs://changed 防抖刷新文件树(动态 import 不进首屏)。
   useEffect(() => {
@@ -1047,7 +1088,7 @@ function App() {
                         extension={getFileExtension(tab.path)}
                         themeKind={activeTheme.kind}
                         settings={settings}
-                        onDocChange={() => handleDocChange(tab.path)}
+                        onDocChange={() => handleDocChange(tab.path, "main")}
                       />
                     </div>
                   ))}
@@ -1075,7 +1116,7 @@ function App() {
                     extension={getFileExtension(splitPath)}
                     themeKind={activeTheme.kind}
                     settings={settings}
-                    onDocChange={() => handleDocChange(splitPath)}
+                    onDocChange={() => handleDocChange(splitPath, "split")}
                   />
                 </Suspense>
               </div>
