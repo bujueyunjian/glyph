@@ -23,6 +23,16 @@ export function toggleLinePrefix(text: string, prefix: string): string {
     .join("\n");
 }
 
+// 任务列表切换:逐行加 "- [ ] ";全部已是任务项(- [ ] / - [x])则去除该前缀。
+export function toggleTaskList(text: string): string {
+  const lines = text.split("\n");
+  const taskPrefix = /^- \[[ xX]\] /;
+  const allHave = lines.every((line) => taskPrefix.test(line));
+  return lines
+    .map((line) => (allHave ? line.replace(taskPrefix, "") : `- [ ] ${line}`))
+    .join("\n");
+}
+
 // 有序列表切换:逐行加 "1. " "2. " …;全部已为编号则去除。
 export function toggleOrderedList(text: string): string {
   const lines = text.split("\n");

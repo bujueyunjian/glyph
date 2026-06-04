@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { toggleLinePrefix, toggleOrderedList, toggleWrap } from "./mdFormat";
+import {
+  toggleLinePrefix,
+  toggleOrderedList,
+  toggleTaskList,
+  toggleWrap,
+} from "./mdFormat";
 
 describe("toggleWrap", () => {
   it("环绕未格式化的选区", () => {
@@ -44,5 +49,15 @@ describe("toggleOrderedList", () => {
 
   it("整段已编号则去除", () => {
     expect(toggleOrderedList("1. a\n2. b")).toBe("a\nb");
+  });
+});
+
+describe("toggleTaskList", () => {
+  it("逐行加任务项", () => {
+    expect(toggleTaskList("a\nb")).toBe("- [ ] a\n- [ ] b");
+  });
+
+  it("整段已是任务项则去除(含已勾选)", () => {
+    expect(toggleTaskList("- [ ] a\n- [x] b")).toBe("a\nb");
   });
 });

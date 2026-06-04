@@ -101,7 +101,8 @@
     "h2": "标题 2",
     "quote": "引用",
     "bullet": "无序列表",
-    "ordered": "有序列表"
+    "ordered": "有序列表",
+    "task": "任务列表"
   },
   "agent": {
     "group": "AI",

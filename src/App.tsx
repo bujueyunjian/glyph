@@ -63,6 +63,7 @@ import {
 import {
   toggleLinePrefix,
   toggleOrderedList,
+  toggleTaskList,
   toggleWrap,
 } from "@/features/markdown/mdFormat";
 import { markdownHeadings } from "@/features/markdown/outline";
@@ -1097,6 +1098,12 @@ function App() {
               title: t("mdfmt.ordered"),
               group: t("mdfmt.group"),
               perform: () => transformLines(toggleOrderedList),
+            },
+            {
+              id: "mdfmt.task",
+              title: t("mdfmt.task"),
+              group: t("mdfmt.group"),
+              perform: () => transformLines(toggleTaskList),
             },
           ]
         : []),

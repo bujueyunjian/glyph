@@ -101,7 +101,8 @@
     "h2": "Heading 2",
     "quote": "Blockquote",
     "bullet": "Bulleted List",
-    "ordered": "Numbered List"
+    "ordered": "Numbered List",
+    "task": "Task List"
   },
   "agent": {
     "group": "AI",
