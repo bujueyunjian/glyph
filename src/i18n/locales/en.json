@@ -117,7 +117,12 @@
   "lsp": {
     "unavailable": "{{name}} not connected (not installed or failed to start)",
     "goToDefinition": "Go to Definition",
-    "format": "Format Document"
+    "format": "Format Document",
+    "rename": "Rename Symbol",
+    "renameLabel": "New name",
+    "renameDone": "Renamed across {{count}} file(s)",
+    "renameNone": "No references to rename",
+    "renameFailed": "Rename failed: {{msg}}"
   },
   "update": {
     "check": "Check for Updates",

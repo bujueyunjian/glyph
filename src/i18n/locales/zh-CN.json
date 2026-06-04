@@ -117,7 +117,12 @@
   "lsp": {
     "unavailable": "{{name}} 未连接(未安装或启动失败)",
     "goToDefinition": "转到定义",
-    "format": "格式化文档"
+    "format": "格式化文档",
+    "rename": "重命名符号",
+    "renameLabel": "新名称",
+    "renameDone": "已重命名 {{count}} 个文件",
+    "renameNone": "无可重命名的引用",
+    "renameFailed": "重命名失败: {{msg}}"
   },
   "update": {
     "check": "检查更新",

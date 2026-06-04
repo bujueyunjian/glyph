@@ -114,6 +114,40 @@ export function toCmChanges(edits: unknown, doc: Text): CmChange[] {
   return out;
 }
 
+export interface FileEdits {
+  path: string;
+  edits: unknown[];
+}
+
+const uriToPath = (uri: string): string =>
+  uri.startsWith("file://")
+    ? decodeURIComponent(uri.slice("file://".length))
+    : uri;
+
+// LSP WorkspaceEdit(rename 返回)→ 按文件分组的 TextEdit。兼容 changes 映射与 documentChanges 数组。
+export function workspaceEditChanges(result: unknown): FileEdits[] {
+  if (!result || typeof result !== "object") return [];
+  const we = result as {
+    changes?: Record<string, unknown[]>;
+    documentChanges?: unknown[];
+  };
+  const out: FileEdits[] = [];
+  if (we.changes && typeof we.changes === "object") {
+    for (const [uri, edits] of Object.entries(we.changes)) {
+      if (Array.isArray(edits)) out.push({ path: uriToPath(uri), edits });
+    }
+  }
+  if (Array.isArray(we.documentChanges)) {
+    for (const dc of we.documentChanges) {
+      const d = dc as { textDocument?: { uri?: unknown }; edits?: unknown };
+      if (typeof d.textDocument?.uri === "string" && Array.isArray(d.edits)) {
+        out.push({ path: uriToPath(d.textDocument.uri), edits: d.edits });
+      }
+    }
+  }
+  return out;
+}
+
 export interface DefinitionTarget {
   path: string;
   line: number;

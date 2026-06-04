@@ -9,6 +9,7 @@ import {
   toCmChanges,
   toCmCompletions,
   toCmDiagnostics,
+  workspaceEditChanges,
 } from "./protocol";
 
 const doc = Text.of(["fn main() {", "    let x = 1;", "}"]);
@@ -156,5 +157,41 @@ describe("toCmChanges", () => {
   it("缺 range/newText 跳过;非数组返回空", () => {
     expect(toCmChanges([{ newText: "x" }], doc)).toEqual([]);
     expect(toCmChanges(null, doc)).toEqual([]);
+  });
+});
+
+describe("workspaceEditChanges", () => {
+  it("changes 映射按文件分组 + 去 file://", () => {
+    const we = {
+      changes: {
+        "file:///work/a.rs": [{ newText: "x" }],
+        "file:///work/b.rs": [{ newText: "y" }, { newText: "z" }],
+      },
+    };
+    const out = workspaceEditChanges(we);
+    expect(out).toContainEqual({
+      path: "/work/a.rs",
+      edits: [{ newText: "x" }],
+    });
+    expect(out.find((f) => f.path === "/work/b.rs")?.edits).toHaveLength(2);
+  });
+
+  it("documentChanges 数组形式", () => {
+    const we = {
+      documentChanges: [
+        {
+          textDocument: { uri: "file:///work/c.rs" },
+          edits: [{ newText: "n" }],
+        },
+      ],
+    };
+    expect(workspaceEditChanges(we)).toEqual([
+      { path: "/work/c.rs", edits: [{ newText: "n" }] },
+    ]);
+  });
+
+  it("空/非法返回空", () => {
+    expect(workspaceEditChanges(null)).toEqual([]);
+    expect(workspaceEditChanges({})).toEqual([]);
   });
 });

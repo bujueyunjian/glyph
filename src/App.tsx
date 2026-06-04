@@ -71,6 +71,7 @@ import {
   definitionTarget,
   offsetToPosition,
   toCmChanges,
+  workspaceEditChanges,
 } from "@/features/lsp/protocol";
 import { lspRequest } from "@/api/lspApi";
 import { checkForUpdate } from "@/features/update/checkUpdate";
@@ -505,6 +506,67 @@ function App() {
     if (target) openHit(target.path, target.line + 1); // LSP 0 基行 → openHit 1 基
   }, [activeView, lspStatus.serverId, effectiveActive, openHit]);
 
+  // 把 TextEdit 应用到某文件:打开它,轮询等实例就绪后排序 dispatch(应对懒加载时序)。
+  const applyEditsToFile = useCallback(
+    (path: string, edits: unknown[]) => {
+      void openPath(path);
+      let tries = 0;
+      const apply = () => {
+        const view = editorRefs.current.get(path)?.view;
+        if (view) {
+          const changes = toCmChanges(edits, view.state.doc).sort(
+            (a, b) => a.from - b.from,
+          );
+          if (changes.length) view.dispatch({ changes });
+        } else if (tries++ < 20) {
+          setTimeout(apply, 50);
+        }
+      };
+      setTimeout(apply, 50);
+    },
+    [openPath],
+  );
+
+  // 重命名符号:请求 LSP rename,把 WorkspaceEdit 应用到每个受影响文件(自动打开)。
+  const doRename = useCallback(() => {
+    const view = activeView();
+    if (!view || lspStatus.serverId == null || !effectiveActive) return;
+    const serverId = lspStatus.serverId;
+    const uri = `file://${effectiveActive}`;
+    const position = offsetToPosition(
+      view.state.doc,
+      view.state.selection.main.head,
+    );
+    setPromptReq({
+      title: t("lsp.rename"),
+      fields: [{ key: "name", label: t("lsp.renameLabel") }],
+      onSubmit: (v) => {
+        const newName = v.name?.trim();
+        if (!newName) return;
+        void (async () => {
+          let result: unknown;
+          try {
+            result = await lspRequest(serverId, "textDocument/rename", {
+              textDocument: { uri },
+              position,
+              newName,
+            });
+          } catch (err) {
+            toast.error(t("lsp.renameFailed", { msg: (err as Error).message }));
+            return;
+          }
+          const files = workspaceEditChanges(result);
+          if (files.length === 0) {
+            toast(t("lsp.renameNone"));
+            return;
+          }
+          for (const fe of files) applyEditsToFile(fe.path, fe.edits);
+          toast.success(t("lsp.renameDone", { count: files.length }));
+        })();
+      },
+    });
+  }, [activeView, lspStatus.serverId, effectiveActive, applyEditsToFile, t]);
+
   // 格式化文档:请求 LSP formatting,把 TextEdit 一次性 dispatch(排序防 CM 报错)。
   const doFormatDocument = useCallback(async () => {
     const view = activeView();
@@ -793,6 +855,13 @@ function App() {
               shortcut: "Shift Alt F",
               perform: () => void doFormatDocument(),
             },
+            {
+              id: "lsp.rename",
+              title: t("lsp.rename"),
+              group: t("menu.edit"),
+              shortcut: "F2",
+              perform: doRename,
+            },
           ]
         : []),
       {
@@ -983,6 +1052,7 @@ function App() {
       lspStatus.serverId,
       goToDefinition,
       doFormatDocument,
+      doRename,
       doCheckUpdate,
     ],
   );
