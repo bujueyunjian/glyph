@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { Theme } from "@/theme/themes";
 import {
   type EditorSettings,
+  FONT_FAMILY_OPTIONS,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
   TAB_SIZE_OPTIONS,
@@ -113,6 +114,20 @@ export function SettingsPanel({
                 {TAB_SIZE_OPTIONS.map((size) => (
                   <option key={size} value={size}>
                     {size}
+                  </option>
+                ))}
+              </select>
+            </Row>
+
+            <Row label={t("settings.fontFamily")}>
+              <select
+                className={selectClass}
+                value={settings.fontFamily}
+                onChange={(e) => updateSetting("fontFamily", e.target.value)}
+              >
+                {FONT_FAMILY_OPTIONS.map((font) => (
+                  <option key={font.label} value={font.value}>
+                    {font.label}
                   </option>
                 ))}
               </select>

@@ -76,6 +76,9 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
     const extensions = useMemo(() => {
       const appearance = EditorView.theme({
         "&": { fontSize: `${settings.fontSize}px` },
+        ".cm-content, .cm-gutters": settings.fontFamily
+          ? { fontFamily: settings.fontFamily }
+          : {},
         ".cm-content": {
           fontVariantLigatures: settings.ligatures ? "normal" : "none",
         },

@@ -142,6 +142,8 @@ function App() {
     openPath,
     setActive,
     closeTab,
+    closeOthers,
+    closeAll,
     save,
     saveAs,
     saveAll,
@@ -307,6 +309,17 @@ function App() {
     },
     [closeTab],
   );
+
+  // 关闭其他/全部标签:同步清理悬空的分屏视图。
+  const doCloseOthers = useCallback(() => {
+    if (!effectiveActive) return;
+    closeOthers(effectiveActive);
+    setSplitPath((cur) => (cur === effectiveActive ? cur : null));
+  }, [closeOthers, effectiveActive]);
+  const doCloseAll = useCallback(() => {
+    closeAll();
+    setSplitPath(null);
+  }, [closeAll]);
 
   // 跳到当前文件指定行(Goto Anything 的 `:` 模式)。
   const goToLine = useCallback(
@@ -608,6 +621,26 @@ function App() {
         shortcut: "Ctrl/⌘ ⌥ S",
         perform: () => void saveAll(),
       },
+      ...(tabs.length > 1
+        ? [
+            {
+              id: "file.closeOthers",
+              title: t("file.closeOthers"),
+              group: t("menu.file"),
+              perform: doCloseOthers,
+            },
+          ]
+        : []),
+      ...(tabs.length > 0
+        ? [
+            {
+              id: "file.closeAll",
+              title: t("file.closeAll"),
+              group: t("menu.file"),
+              perform: doCloseAll,
+            },
+          ]
+        : []),
       {
         id: "view.settings",
         title: t("settings.title"),
@@ -870,6 +903,9 @@ function App() {
       doSave,
       doSaveAs,
       saveAll,
+      tabs.length,
+      doCloseOthers,
+      doCloseAll,
       themes,
       setTheme,
       transformLines,

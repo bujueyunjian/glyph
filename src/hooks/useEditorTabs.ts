@@ -197,6 +197,22 @@ export function useEditorTabs(
     [getContent, writeTabs, activate, t],
   );
 
+  // 关闭其他标签:除 keepPath 外全部关闭(各自走 closeTab 的脏保护/可撤销)。
+  const closeOthers = useCallback(
+    (keepPath: string) => {
+      tabsRef.current
+        .map((tab) => tab.path)
+        .filter((path) => path !== keepPath)
+        .forEach((path) => closeTab(path));
+    },
+    [closeTab],
+  );
+
+  // 关闭全部标签(各自走 closeTab 的脏保护/可撤销)。
+  const closeAll = useCallback(() => {
+    tabsRef.current.map((tab) => tab.path).forEach((path) => closeTab(path));
+  }, [closeTab]);
+
   // 保存全部脏标签:并发写盘后一次性清脏,只弹一条汇总 toast(不逐文件刷屏)。
   const saveAll = useCallback(async () => {
     const dirty = tabsRef.current.filter((tab) => tab.isDirty);
@@ -223,6 +239,8 @@ export function useEditorTabs(
     openPath,
     setActive,
     closeTab,
+    closeOthers,
+    closeAll,
     save,
     saveAs,
     saveAll,
