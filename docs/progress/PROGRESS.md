@@ -76,6 +76,7 @@
 - ✅ [0044] **查找引用**(references→搜索面板覆盖模式)· **编辑器右键上下文菜单**(剪贴板/查找/LSP 组/命令面板)· **状态栏瘦身为纯状态 + 命令归位菜单栏**(视图:命令面板/分屏;编辑:跨文件搜索)· **Agent 数据安全**(首用知情同意 + `deny_reply` 能力否决边界 + 2 回归测试,[ADR-0009](../adr/0009-agent-data-security.md))· agent 未装的可执行报错
 - ✅ [0045] **文档大纲面板**(`outlineSymbols` 带层级 depth + 单测;documentSymbol 拉取,缩进/kind/点击跳转;视图菜单 + `Ctrl/⌘⇧O`;Playwright 验面板壳/needsLsp 态)
 - ✅ [0046] **Agent 作用域收敛**(ADR-0009 后续):agent cwd 钉到打开的工作区根(`resolve_cwd`,缺省回退进程目录)+ 回归测试,不再默认暴露打包 app 的启动目录(可能 `/`)
+- ✅ [0047] **Markdown 标题大纲**(支柱②):大纲面板对 Markdown 走纯前端 `markdownHeadings`(跳过围栏代码块)解析标题,**无需 LSP** 即可用 + 3 单测;`canResolve` 区分 MD/LSP 空态
 - ✅ 发布 v0.0.2 → **v0.0.11**(逐版 4 平台 CI 绿;后续改批量发版)
 
 **剩余(硬卡外部资源/真机验证,headless 已做到极限)**：

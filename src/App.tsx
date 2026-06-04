@@ -65,6 +65,7 @@ import {
   toggleOrderedList,
   toggleWrap,
 } from "@/features/markdown/mdFormat";
+import { markdownHeadings } from "@/features/markdown/outline";
 import { formatJson, minifyJson } from "@/features/textops/json";
 import { countText } from "@/features/textops/textStats";
 import type { LspEditorContext } from "@/features/lsp/editor";
@@ -701,10 +702,19 @@ function App() {
     settings.insertSpaces,
   ]);
 
-  // 文档大纲:面板开启 + 有聚焦文件 + 语言服务器就绪时拉取符号(切文件自动刷新)。
-  // 只在打开/切文件时拉,不挂打字热路径(符号变更靠重开或切换刷新,守延迟高线)。
+  // 文档大纲:面板开启 + 有聚焦文件时填充。Markdown 走纯前端标题解析(无需 LSP);
+  // 其余语言在服务器就绪时拉 documentSymbol。只在打开/切文件时刷新,不挂打字热路径(守延迟高线)。
   useEffect(() => {
-    if (!outlineOpen || lspStatus.serverId == null || !effectiveActive) {
+    if (!outlineOpen || !effectiveActive) {
+      setOutlineSyms([]);
+      return;
+    }
+    if (["md", "markdown"].includes(getFileExtension(effectiveActive))) {
+      setOutlineLoading(false);
+      setOutlineSyms(markdownHeadings(getContent(effectiveActive)));
+      return;
+    }
+    if (lspStatus.serverId == null) {
       setOutlineSyms([]);
       return;
     }
@@ -725,7 +735,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [outlineOpen, lspStatus.serverId, effectiveActive]);
+  }, [outlineOpen, lspStatus.serverId, effectiveActive, getContent]);
 
   // 检查更新:比对 GitHub 最新发布,有则提示并可跳下载页(不自动装,那需签名/证书)。
   const doCheckUpdate = useCallback(async () => {
@@ -1608,7 +1618,13 @@ function App() {
               <OutlinePanel
                 symbols={outlineSyms}
                 loading={outlineLoading}
-                hasLsp={lspStatus.serverId != null}
+                canResolve={
+                  lspStatus.serverId != null ||
+                  (!!effectiveActive &&
+                    ["md", "markdown"].includes(
+                      getFileExtension(effectiveActive),
+                    ))
+                }
                 onGoToLine={(line) => goToLine(line + 1)}
                 onClose={() => setOutlineOpen(false)}
               />

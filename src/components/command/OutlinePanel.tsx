@@ -7,8 +7,8 @@ interface OutlinePanelProps {
   symbols: OutlineSymbol[];
   /** 是否正在拉取符号。 */
   loading: boolean;
-  /** 语言服务器是否就绪(未就绪时提示需语言服务器,而非"无符号")。 */
-  hasLsp: boolean;
+  /** 大纲来源是否可用(Markdown 恒真;其余语言需 LSP 就绪)。否则空态提示需语言服务器。 */
+  canResolve: boolean;
   /** 跳转到 0 基行(调用方转 1 基)。 */
   onGoToLine: (line: number) => void;
   onClose: () => void;
@@ -39,7 +39,7 @@ const KIND_LABEL: Record<number, string> = {
 export function OutlinePanel({
   symbols,
   loading,
-  hasLsp,
+  canResolve,
   onGoToLine,
   onClose,
 }: OutlinePanelProps) {
@@ -67,7 +67,7 @@ export function OutlinePanel({
           </p>
         ) : symbols.length === 0 ? (
           <p className="px-3 py-2 text-xs text-[var(--color-subtle)]">
-            {hasLsp ? t("outline.empty") : t("outline.needsLsp")}
+            {canResolve ? t("outline.empty") : t("outline.needsLsp")}
           </p>
         ) : (
           symbols.map((sym, index) => (
