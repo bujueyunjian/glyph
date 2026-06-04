@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { FileText } from "lucide-react";
+
+import logoUrl from "@/assets/logo.svg";
 
 // 空态:安静的快捷键速查表,不营销(设计准则 #5「显示内容,不显示转圈」;空态即自我教学)。
 const SHORTCUTS = [
@@ -13,10 +14,7 @@ export function EmptyState() {
   const { t } = useTranslation();
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 text-center select-none">
-      <FileText
-        className="size-10 text-[var(--color-subtle)]"
-        strokeWidth={1.5}
-      />
+      <img src={logoUrl} alt="Glyph" className="size-16 opacity-95" />
       <div className="text-lg text-[var(--color-text)]">
         {t("workbench.emptyTitle")}
       </div>

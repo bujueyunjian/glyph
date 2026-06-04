@@ -25,3 +25,4 @@ pnpm-debug.log*
 
 # Rust / Tauri
 src-tauri/target
+.playwright-mcp/
