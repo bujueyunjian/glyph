@@ -111,6 +111,9 @@
     "split": "分屏",
     "commands": "命令面板"
   },
+  "lsp": {
+    "unavailable": "{{name}} 未连接(未安装或启动失败)"
+  },
   "file": {
     "open": "打开",
     "openFolder": "打开文件夹",

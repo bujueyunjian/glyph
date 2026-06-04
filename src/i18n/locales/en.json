@@ -111,6 +111,9 @@
     "split": "Split",
     "commands": "Commands"
   },
+  "lsp": {
+    "unavailable": "{{name}} not connected (not installed or failed to start)"
+  },
   "file": {
     "open": "Open",
     "openFolder": "Open Folder",

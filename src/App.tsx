@@ -42,6 +42,7 @@ import { useEditorTabs } from "@/hooks/useEditorTabs";
 import { useRecentFiles } from "@/hooks/useRecentFiles";
 import { useRecentFolders } from "@/hooks/useRecentFolders";
 import { useSession } from "@/hooks/useSession";
+import { useLsp } from "@/hooks/useLsp";
 import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/hooks/useTheme";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -239,6 +240,8 @@ function App() {
   }, []);
   // 聚焦面板的当前文件(save/undo/find/变换作用对象)。
   const effectiveActive = focusedPane === "split" ? splitPath : activePath;
+  // 按当前文件语言自动连接语言服务器,状态栏显示连接态。
+  const lspStatus = useLsp(effectiveActive, rootPath);
 
   const doSave = useCallback(() => {
     if (effectiveActive) void save(effectiveActive);
@@ -1056,6 +1059,7 @@ function App() {
             language={
               effectiveActive ? getFileExtension(effectiveActive) : undefined
             }
+            lsp={lspStatus}
             onCommandPalette={() => setPaletteOpen(true)}
             onSearch={() => setSearchOpen(true)}
             onToggleSplit={toggleSplit}
