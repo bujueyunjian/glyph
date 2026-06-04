@@ -304,11 +304,17 @@ export function MenuBar(props: MenuBarProps) {
             <Menubar.Item
               className={itemClass}
               onSelect={() =>
-                toast.success(`${t("app.name")} v${appVersion ?? "0.0.1"}`)
+                toast.success(
+                  appVersion
+                    ? `${t("app.name")} v${appVersion}`
+                    : t("app.name"),
+                )
               }
             >
               {t("help.about")}
-              <span className={shortcutClass}>v{appVersion ?? "0.0.1"}</span>
+              {appVersion ? (
+                <span className={shortcutClass}>v{appVersion}</span>
+              ) : null}
             </Menubar.Item>
           </Menubar.Content>
         </Menubar.Portal>
