@@ -116,6 +116,9 @@
     "panelHint": "Type a prompt below. Glyph bundles no model/key — it just forwards your prompt locally to your installed ACP adapter (e.g. claude-agent-acp; install: npm i -g @zed-industries/claude-code-acp).",
     "consentTitle": "Run AI agent?",
     "consentBody": "Your prompt and any project content the agent reads will be sent to your configured agent and its model provider. Glyph only forwards locally — it never stores or uploads your data. Continue only if you trust this agent.",
+    "mcpLabel": "MCP servers ({{n}})",
+    "mcpHint": "JSON array, forwarded to the agent to connect; leave empty for none.",
+    "mcpInvalid": "Invalid MCP config: {{msg}}",
     "send": "Send"
   },
   "workbench": {

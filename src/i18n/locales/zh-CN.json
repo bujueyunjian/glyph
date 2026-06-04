@@ -116,6 +116,9 @@
     "panelHint": "在下方输入提问。Glyph 不内置模型/密钥,只把提问本地转发给你已装的 ACP 适配器(如 claude-agent-acp;安装:npm i -g @zed-industries/claude-code-acp)。",
     "consentTitle": "允许运行 AI agent?",
     "consentBody": "运行后,你的提问及 agent 读取的项目内容会发送给你配置的 agent 及其模型提供方。Glyph 仅在本地转发,不存储、不上传你的数据。仅在信任该 agent 时继续。",
+    "mcpLabel": "MCP 服务器({{n}})",
+    "mcpHint": "JSON 数组,转发给 agent 由其连接;留空则不接 MCP。",
+    "mcpInvalid": "MCP 配置无效: {{msg}}",
     "send": "发送"
   },
   "workbench": {

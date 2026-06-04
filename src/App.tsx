@@ -22,6 +22,7 @@ import {
 } from "@/api/fileApi";
 import { watchWorkspace } from "@/api/workspaceApi";
 import { agentCancel, agentStream } from "@/api/agentApi";
+import { parseMcpServers } from "@/features/agent/mcpConfig";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
@@ -193,6 +194,25 @@ function App() {
   const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentCmd, setAgentCmd] = useState("claude-agent-acp");
+  // MCP server 配置(JSON 文本,持久化)。转发给 agent 由其连接(ADR-0010)。
+  const [mcpServersText, setMcpServersText] = useState(() => {
+    try {
+      return localStorage.getItem("glyph.mcpServers") ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const mcpParsed = useMemo(
+    () => parseMcpServers(mcpServersText),
+    [mcpServersText],
+  );
+  useEffect(() => {
+    try {
+      localStorage.setItem("glyph.mcpServers", mcpServersText);
+    } catch {
+      // 持久化失败不致命
+    }
+  }, [mcpServersText]);
   // 当前流式会话的 turn id(前端分配);事件按它过滤,杜绝旧会话残留串扰。
   const agentTurnRef = useRef<number | null>(null);
   const agentTurnCounter = useRef(0);
@@ -221,6 +241,11 @@ function App() {
   const askAgent = useCallback(
     (cmd: string, prompt: string) => {
       void (async () => {
+        if (mcpParsed.error) {
+          // MCP 配置非法不静默吞:响亮报错并拒发,避免把坏配置或意外的空配置塞给 agent。
+          toast.error(t("agent.mcpInvalid", { msg: mcpParsed.error }));
+          return;
+        }
         if (!(await ensureAgentConsent())) return; // 未同意则不发起,杜绝无意识的数据外发
         const prev = agentTurnRef.current;
         if (prev !== null) void agentCancel(prev);
@@ -230,7 +255,14 @@ function App() {
         setAgentResult(""); // 清空,等待流式分块
         setAgentBusy(true);
         // cwd 传打开的工作区根:把 agent 默认作用域钉到用户打开的工程(数据安全,ADR-0009)。
-        void agentStream(cmd, prompt, turn, rootPath ?? null).catch((err) => {
+        // mcpServers 转发给 agent 由其连接(ADR-0010)。
+        void agentStream(
+          cmd,
+          prompt,
+          turn,
+          rootPath ?? null,
+          mcpParsed.servers,
+        ).catch((err) => {
           if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
           agentTurnRef.current = null;
           setAgentBusy(false);
@@ -238,7 +270,7 @@ function App() {
         });
       })();
     },
-    [t, ensureAgentConsent, rootPath],
+    [t, ensureAgentConsent, rootPath, mcpParsed],
   );
 
   // 常驻 agent 事件监听:按当前 turn 过滤,关闭后不复活对话框(prev===null 即忽略)。
@@ -1615,6 +1647,10 @@ function App() {
               <AgentPanel
                 agentCmd={agentCmd}
                 onAgentCmdChange={setAgentCmd}
+                mcpServersText={mcpServersText}
+                onMcpServersTextChange={setMcpServersText}
+                mcpError={mcpParsed.error}
+                mcpCount={mcpParsed.servers.length}
                 result={agentResult}
                 busy={agentBusy}
                 onSend={(prompt) => askAgent(agentCmd, prompt)}

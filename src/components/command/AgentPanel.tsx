@@ -5,6 +5,13 @@ import { useTranslation } from "react-i18next";
 interface AgentPanelProps {
   agentCmd: string;
   onAgentCmdChange: (value: string) => void;
+  /** MCP server 配置(JSON 文本);转发给 agent 由其连接(ADR-0010)。 */
+  mcpServersText: string;
+  onMcpServersTextChange: (value: string) => void;
+  /** MCP 配置解析错误(非 null 时红字提示,发送被拒)。 */
+  mcpError: string | null;
+  /** 已配置的 MCP server 数量(标题计数)。 */
+  mcpCount: number;
   /** 流式响应文本(null = 尚无;"" = 已开始,等待分块)。 */
   result: string | null;
   /** 是否有进行中的会话(展示加载态/禁用发送)。 */
@@ -18,6 +25,10 @@ interface AgentPanelProps {
 export function AgentPanel({
   agentCmd,
   onAgentCmdChange,
+  mcpServersText,
+  onMcpServersTextChange,
+  mcpError,
+  mcpCount,
   result,
   busy,
   onSend,
@@ -59,6 +70,29 @@ export function AgentPanel({
           onChange={(e) => onAgentCmdChange(e.target.value)}
           spellCheck={false}
         />
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs text-[var(--color-muted)]">
+            {t("agent.mcpLabel", { n: mcpCount })}
+          </summary>
+          <textarea
+            className="mt-1 h-24 w-full resize-none rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 font-mono text-xs text-[var(--color-text)] outline-none focus-visible:border-[var(--color-accent)]"
+            value={mcpServersText}
+            placeholder={
+              '[{ "name": "fs", "command": "mcp-fs", "args": ["--stdio"], "env": [] }]'
+            }
+            onChange={(e) => onMcpServersTextChange(e.target.value)}
+            spellCheck={false}
+          />
+          {mcpError ? (
+            <p className="mt-1 text-xs text-red-400">
+              {t("agent.mcpInvalid", { msg: mcpError })}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-[var(--color-subtle)]">
+              {t("agent.mcpHint")}
+            </p>
+          )}
+        </details>
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
