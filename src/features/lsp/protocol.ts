@@ -86,6 +86,34 @@ export function hoverText(result: unknown): string | null {
   return text.trim() || null;
 }
 
+export interface CmChange {
+  from: number;
+  to: number;
+  insert: string;
+}
+
+// LSP TextEdit[](formatting/rename 返回)→ CM changes(range 换算到偏移)。
+// TextEdit 互不重叠(LSP 保证),故按原文偏移一次性 dispatch 即可。
+export function toCmChanges(edits: unknown, doc: Text): CmChange[] {
+  if (!Array.isArray(edits)) return [];
+  const out: CmChange[] = [];
+  for (const raw of edits) {
+    const e = raw as {
+      range?: { start?: LspPosition; end?: LspPosition };
+      newText?: unknown;
+    };
+    if (!e.range?.start || !e.range?.end || typeof e.newText !== "string") {
+      continue;
+    }
+    out.push({
+      from: positionToOffset(doc, e.range.start),
+      to: positionToOffset(doc, e.range.end),
+      insert: e.newText,
+    });
+  }
+  return out;
+}
+
 export interface DefinitionTarget {
   path: string;
   line: number;

@@ -67,7 +67,11 @@ import { formatJson, minifyJson } from "@/features/textops/json";
 import { countText } from "@/features/textops/textStats";
 import type { LspEditorContext } from "@/features/lsp/editor";
 import { languageIdForExtension } from "@/features/lsp/servers";
-import { definitionTarget, offsetToPosition } from "@/features/lsp/protocol";
+import {
+  definitionTarget,
+  offsetToPosition,
+  toCmChanges,
+} from "@/features/lsp/protocol";
 import { lspRequest } from "@/api/lspApi";
 import { checkForUpdate } from "@/features/update/checkUpdate";
 import {
@@ -501,6 +505,35 @@ function App() {
     if (target) openHit(target.path, target.line + 1); // LSP 0 基行 → openHit 1 基
   }, [activeView, lspStatus.serverId, effectiveActive, openHit]);
 
+  // 格式化文档:请求 LSP formatting,把 TextEdit 一次性 dispatch(排序防 CM 报错)。
+  const doFormatDocument = useCallback(async () => {
+    const view = activeView();
+    if (!view || lspStatus.serverId == null || !effectiveActive) return;
+    let result: unknown;
+    try {
+      result = await lspRequest(lspStatus.serverId, "textDocument/formatting", {
+        textDocument: { uri: `file://${effectiveActive}` },
+        options: {
+          tabSize: settings.tabSize,
+          insertSpaces: settings.insertSpaces,
+        },
+      });
+    } catch {
+      return;
+    }
+    const changes = toCmChanges(result, view.state.doc).sort(
+      (a, b) => a.from - b.from,
+    );
+    if (changes.length) view.dispatch({ changes });
+    view.focus();
+  }, [
+    activeView,
+    lspStatus.serverId,
+    effectiveActive,
+    settings.tabSize,
+    settings.insertSpaces,
+  ]);
+
   // 检查更新:比对 GitHub 最新发布,有则提示并可跳下载页(不自动装,那需签名/证书)。
   const doCheckUpdate = useCallback(async () => {
     if (!appVersion) {
@@ -753,6 +786,13 @@ function App() {
               shortcut: "F12",
               perform: () => void goToDefinition(),
             },
+            {
+              id: "lsp.format",
+              title: t("lsp.format"),
+              group: t("menu.edit"),
+              shortcut: "Shift Alt F",
+              perform: () => void doFormatDocument(),
+            },
           ]
         : []),
       {
@@ -942,6 +982,7 @@ function App() {
       transformWholeDoc,
       lspStatus.serverId,
       goToDefinition,
+      doFormatDocument,
       doCheckUpdate,
     ],
   );

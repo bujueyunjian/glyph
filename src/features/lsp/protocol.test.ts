@@ -6,6 +6,7 @@ import {
   hoverText,
   offsetToPosition,
   positionToOffset,
+  toCmChanges,
   toCmCompletions,
   toCmDiagnostics,
 } from "./protocol";
@@ -132,5 +133,28 @@ describe("definitionTarget", () => {
     expect(definitionTarget(null)).toBeNull();
     expect(definitionTarget([])).toBeNull();
     expect(definitionTarget({ uri: "file:///x" })).toBeNull();
+  });
+});
+
+describe("toCmChanges", () => {
+  it("TextEdit range 换算到 {from,to,insert}", () => {
+    const edits = [
+      {
+        range: {
+          start: { line: 1, character: 0 },
+          end: { line: 1, character: 4 },
+        },
+        newText: "  ",
+      },
+    ];
+    const out = toCmChanges(edits, doc);
+    expect(out).toEqual([
+      { from: doc.line(2).from, to: doc.line(2).from + 4, insert: "  " },
+    ]);
+  });
+
+  it("缺 range/newText 跳过;非数组返回空", () => {
+    expect(toCmChanges([{ newText: "x" }], doc)).toEqual([]);
+    expect(toCmChanges(null, doc)).toEqual([]);
   });
 });

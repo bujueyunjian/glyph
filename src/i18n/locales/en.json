@@ -116,7 +116,8 @@
   },
   "lsp": {
     "unavailable": "{{name}} not connected (not installed or failed to start)",
-    "goToDefinition": "Go to Definition"
+    "goToDefinition": "Go to Definition",
+    "format": "Format Document"
   },
   "update": {
     "check": "Check for Updates",

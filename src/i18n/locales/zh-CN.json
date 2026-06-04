@@ -116,7 +116,8 @@
   },
   "lsp": {
     "unavailable": "{{name}} 未连接(未安装或启动失败)",
-    "goToDefinition": "转到定义"
+    "goToDefinition": "转到定义",
+    "format": "格式化文档"
   },
   "update": {
     "check": "检查更新",
