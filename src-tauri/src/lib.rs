@@ -4,7 +4,7 @@ mod lsp;
 mod proc;
 mod watch;
 
-use agent::{agent_oneshot, agent_stream};
+use agent::{agent_cancel, agent_oneshot, agent_stream, AgentRegistry};
 use commands::app::get_app_info;
 use commands::file::{
     create_dir, create_file, delete_path, list_dir, list_files, open_file, rename_path, save_file,
@@ -23,6 +23,7 @@ pub fn run() {
         .manage(ProcRegistry::default())
         .manage(WatchState::default())
         .manage(LspRegistry::default())
+        .manage(AgentRegistry::default())
         .invoke_handler(tauri::generate_handler![
             get_app_info,
             open_file,
@@ -41,6 +42,7 @@ pub fn run() {
             unwatch_workspace,
             agent_oneshot,
             agent_stream,
+            agent_cancel,
             lsp_start,
             lsp_send,
             lsp_request,

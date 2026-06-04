@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { getAppInfo } from "@/api/appApi";
 import { createDir, createFile, deletePath, renamePath } from "@/api/fileApi";
 import { watchWorkspace } from "@/api/workspaceApi";
-import { agentStream } from "@/api/agentApi";
+import { agentCancel, agentStream } from "@/api/agentApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
@@ -132,42 +132,74 @@ function App() {
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
   const [agentResult, setAgentResult] = useState<string | null>(null);
-  // 流式 agent 会话的监听解绑函数;关闭对话框或开新会话时调用,避免监听泄漏。
-  const agentCleanupRef = useRef<(() => void) | null>(null);
+  // 当前流式会话的 turn id(前端分配);事件按它过滤,杜绝旧会话残留串扰。
+  const agentTurnRef = useRef<number | null>(null);
+  const agentTurnCounter = useRef(0);
+
   const closeAgentResult = useCallback(() => {
-    agentCleanupRef.current?.();
-    agentCleanupRef.current = null;
+    const turn = agentTurnRef.current;
+    if (turn !== null) void agentCancel(turn); // 终止后台子进程,不留孤儿
+    agentTurnRef.current = null;
     setAgentResult(null);
   }, []);
 
-  // 向 ACP agent 流式提问:响应分块经事件回流,逐块追加到只读对话框(打字热路径之外)。
+  // 向 ACP agent 流式提问:先取消上一会话,分配新 turn,响应分块经事件按 turn 过滤后追加。
   const askAgent = useCallback(
     (agentCmd: string, prompt: string) => {
-      agentCleanupRef.current?.();
+      const prev = agentTurnRef.current;
+      if (prev !== null) void agentCancel(prev);
+      const turn = agentTurnCounter.current + 1;
+      agentTurnCounter.current = turn;
+      agentTurnRef.current = turn; // 先于发起设置,事件抵达即可匹配(无竞态丢块)
       setAgentResult(""); // 开空对话框,等待流式分块
-      agentStream(agentCmd, prompt, {
-        onChunk: (text) => setAgentResult((prev) => (prev ?? "") + text),
-        onDone: () => {
-          agentCleanupRef.current?.();
-          agentCleanupRef.current = null;
-        },
-        onError: (msg) => {
-          agentCleanupRef.current?.();
-          agentCleanupRef.current = null;
-          setAgentResult(null);
-          toast.error(t("agent.failed", { msg }));
-        },
-      })
-        .then((cleanup) => {
-          agentCleanupRef.current = cleanup;
-        })
-        .catch((err) => {
-          setAgentResult(null);
-          toast.error(t("agent.failed", { msg: (err as Error).message }));
-        });
+      void agentStream(agentCmd, prompt, turn).catch((err) => {
+        if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
+        agentTurnRef.current = null;
+        setAgentResult(null);
+        toast.error(t("agent.failed", { msg: (err as Error).message }));
+      });
     },
     [t],
   );
+
+  // 常驻 agent 事件监听:按当前 turn 过滤,关闭后不复活对话框(prev===null 即忽略)。
+  // 常驻(非每会话注册)→ 无监听泄漏、无 cleanup 时序竞态。
+  useEffect(() => {
+    let unlisten: (() => void)[] = [];
+    let disposed = false;
+    void (async () => {
+      try {
+        const { listen } = await import("@tauri-apps/api/event");
+        const subs = await Promise.all([
+          listen<{ turnId: number; text: string }>("agent://chunk", (e) => {
+            if (e.payload.turnId !== agentTurnRef.current) return;
+            setAgentResult((prevText) =>
+              prevText === null ? null : prevText + e.payload.text,
+            );
+          }),
+          listen<{ turnId: number }>("agent://done", (e) => {
+            if (e.payload.turnId === agentTurnRef.current) {
+              agentTurnRef.current = null;
+            }
+          }),
+          listen<{ turnId: number; message: string }>("agent://error", (e) => {
+            if (e.payload.turnId !== agentTurnRef.current) return;
+            agentTurnRef.current = null;
+            setAgentResult(null);
+            toast.error(t("agent.failed", { msg: e.payload.message }));
+          }),
+        ]);
+        if (disposed) subs.forEach((u) => u());
+        else unlisten = subs;
+      } catch (err) {
+        console.warn("注册 agent 事件监听失败(非 Tauri 上下文?):", err);
+      }
+    })();
+    return () => {
+      disposed = true;
+      unlisten.forEach((u) => u());
+    };
+  }, [t]);
   const [splitPath, setSplitPath] = useState<string | null>(null);
   const [focusedPane, setFocusedPaneState] = useState<"main" | "split">("main");
   const setFocusedPane = useCallback((pane: "main" | "split") => {

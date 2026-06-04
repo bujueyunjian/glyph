@@ -1,13 +1,23 @@
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, Command, Stdio};
+use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, State};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+// 进行中的流式会话:turn_id(前端分配)→ 子进程句柄,供取消/回收。
+type ChildMap = Arc<Mutex<HashMap<u64, Child>>>;
+
+#[derive(Default)]
+pub struct AgentRegistry {
+    children: ChildMap,
+}
 
 // ACP(Agent Client Protocol)最小客户端:JSON-RPC 2.0 over ndjson stdio。
 // v1 走轻量自研(仅 serde_json,无 tokio——贴合「轻」SLO,复用 std 子进程模型),
@@ -168,12 +178,13 @@ pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String
     outcome.map(|()| answer)
 }
 
-// 读 ndjson 直到 id 响应,途中把 agent 文本块经事件 `agent://chunk` 流式推送 UI。
+// 读 ndjson 直到 id 响应,途中把 agent 文本块经事件 `agent://chunk` 推送(带 turn_id)。
 fn pump_emit<R: BufRead>(
     app: &AppHandle,
     reader: &mut R,
     stdin: &mut ChildStdin,
     target_id: u64,
+    turn_id: u64,
 ) -> Result<(), String> {
     let mut line = String::new();
     loop {
@@ -191,7 +202,8 @@ fn pump_emit<R: BufRead>(
             return result.map(|_| ());
         }
         if let Some(text) = extract_agent_text(&message) {
-            let _ = app.emit("agent://chunk", text);
+            // 事件带 turn_id:前端按当前会话过滤,杜绝旧会话残留 chunk 串入新会话。
+            let _ = app.emit("agent://chunk", json!({ "turnId": turn_id, "text": text }));
         } else if message.get("method").is_some() {
             if let Some(req_id) = message.get("id").and_then(Value::as_u64) {
                 let err = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32601, "message": "unsupported in Glyph v1" } });
@@ -206,6 +218,7 @@ fn stream_turn<R: BufRead>(
     reader: &mut R,
     stdin: &mut ChildStdin,
     prompt: &str,
+    turn_id: u64,
 ) -> Result<(), String> {
     let mut scratch = String::new();
     write_line(stdin, &rpc_request(0, "initialize", client_init_params()))?;
@@ -232,10 +245,16 @@ fn stream_turn<R: BufRead>(
             json!({ "sessionId": session_id, "prompt": [{ "type": "text", "text": prompt }] }),
         ),
     )?;
-    pump_emit(app, reader, stdin, 2)
+    pump_emit(app, reader, stdin, 2, turn_id)
 }
 
-fn run_stream(app: &AppHandle, agent_cmd: &str, prompt: &str) -> Result<(), String> {
+fn run_stream(
+    app: &AppHandle,
+    children: &ChildMap,
+    turn_id: u64,
+    agent_cmd: &str,
+    prompt: &str,
+) -> Result<(), String> {
     let mut parts = agent_cmd.split_whitespace();
     let program = parts
         .next()
@@ -263,25 +282,69 @@ fn run_stream(app: &AppHandle, agent_cmd: &str, prompt: &str) -> Result<(), Stri
         .stdout
         .take()
         .ok_or_else(|| "无法获取 agent stdout".to_string())?;
-    let mut reader = BufReader::new(stdout);
 
-    let outcome = stream_turn(app, &mut reader, &mut stdin, prompt);
-    kill(&mut child);
-    outcome
+    // 收集 stderr:既防管道写满阻塞,又让失败响亮(把 agent 自身报错并入错误)。
+    let stderr_buf = Arc::new(Mutex::new(String::new()));
+    if let Some(stderr) = child.stderr.take() {
+        let buf = Arc::clone(&stderr_buf);
+        std::thread::spawn(move || {
+            let mut reader = BufReader::new(stderr);
+            let mut line = String::new();
+            while reader.read_line(&mut line).map(|n| n > 0).unwrap_or(false) {
+                buf.lock().unwrap().push_str(&line);
+                line.clear();
+            }
+        });
+    }
+
+    // 登记子进程供取消;turn 自然结束/出错后移除并回收(取消可能已先移除)。
+    children.lock().unwrap().insert(turn_id, child);
+    let mut reader = BufReader::new(stdout);
+    let outcome = stream_turn(app, &mut reader, &mut stdin, prompt, turn_id);
+    if let Some(mut child) = children.lock().unwrap().remove(&turn_id) {
+        kill(&mut child);
+    }
+
+    outcome.map_err(|e| {
+        let detail = stderr_buf.lock().unwrap();
+        let trimmed = detail.trim();
+        if trimmed.is_empty() {
+            e
+        } else {
+            format!("{e}\n{trimmed}")
+        }
+    })
 }
 
-// 流式向 ACP agent 发 prompt:后台线程跑会话,文本经 `agent://chunk` 推送,
-// 结束发 `agent://done`,出错发 `agent://error`。命令即时返回。
+// 流式向 ACP agent 发 prompt:后台线程跑会话,文本经 `agent://chunk` 推送(带 turn_id),
+// 结束发 `agent://done`,出错发 `agent://error`。turn_id 由前端分配,用于过滤/取消。
 #[tauri::command]
-pub fn agent_stream(app: AppHandle, agent_cmd: String, prompt: String) {
-    std::thread::spawn(move || match run_stream(&app, &agent_cmd, &prompt) {
-        Ok(()) => {
-            let _ = app.emit("agent://done", ());
-        }
-        Err(e) => {
-            let _ = app.emit("agent://error", e);
-        }
-    });
+pub fn agent_stream(
+    app: AppHandle,
+    registry: State<'_, AgentRegistry>,
+    agent_cmd: String,
+    prompt: String,
+    turn_id: u64,
+) {
+    let children = Arc::clone(&registry.children);
+    std::thread::spawn(
+        move || match run_stream(&app, &children, turn_id, &agent_cmd, &prompt) {
+            Ok(()) => {
+                let _ = app.emit("agent://done", json!({ "turnId": turn_id }));
+            }
+            Err(e) => {
+                let _ = app.emit("agent://error", json!({ "turnId": turn_id, "message": e }));
+            }
+        },
+    );
+}
+
+// 取消进行中的流式会话:终止并回收其子进程(关闭对话框/开新会话时调用)。
+#[tauri::command]
+pub fn agent_cancel(registry: State<'_, AgentRegistry>, turn_id: u64) {
+    if let Some(mut child) = registry.children.lock().unwrap().remove(&turn_id) {
+        kill(&mut child);
+    }
 }
 
 #[cfg(test)]

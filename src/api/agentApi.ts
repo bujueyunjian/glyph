@@ -1,9 +1,8 @@
-import { listen } from "@tauri-apps/api/event";
-
 import { call } from "./ipc";
 
 // ACP agent 调用封装。对应 Rust agent.rs。
 // agentCmd 为用户已装的 ACP 适配器命令(如 "claude-agent-acp")。
+
 export function agentOneshot(
   agentCmd: string,
   prompt: string,
@@ -11,30 +10,17 @@ export function agentOneshot(
   return call<string>("agent_oneshot", { agentCmd, prompt });
 }
 
-export interface AgentStreamHandlers {
-  onChunk: (text: string) => void;
-  onDone: () => void;
-  onError: (message: string) => void;
-}
-
-// 流式调用 ACP agent:订阅 `agent://chunk/done/error` 事件后触发后台会话。
-// 返回清理函数(解绑监听);调用方在 done/error 或关闭时务必调用,避免监听泄漏。
-export async function agentStream(
+// 流式提问:turnId 由前端分配,用于事件过滤与取消(见 App 的 agent 监听)。
+// 响应分块经 `agent://chunk`(带 turnId)回流;命令即时返回,不阻塞。
+export function agentStream(
   agentCmd: string,
   prompt: string,
-  handlers: AgentStreamHandlers,
-): Promise<() => void> {
-  const unlisteners = await Promise.all([
-    listen<string>("agent://chunk", (event) => handlers.onChunk(event.payload)),
-    listen("agent://done", () => handlers.onDone()),
-    listen<string>("agent://error", (event) => handlers.onError(event.payload)),
-  ]);
-  const cleanup = () => unlisteners.forEach((unlisten) => unlisten());
-  try {
-    await call<null>("agent_stream", { agentCmd, prompt });
-  } catch (err) {
-    cleanup();
-    throw err;
-  }
-  return cleanup;
+  turnId: number,
+): Promise<null> {
+  return call<null>("agent_stream", { agentCmd, prompt, turnId });
+}
+
+// 取消进行中的流式会话:终止并回收其子进程(关闭对话框/开新会话时调用)。
+export function agentCancel(turnId: number): Promise<null> {
+  return call<null>("agent_cancel", { turnId });
 }
