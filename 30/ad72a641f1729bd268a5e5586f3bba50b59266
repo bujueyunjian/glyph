@@ -1,0 +1,31 @@
+src/features/lsp/protocol.test.ts
+  s_82120e9b499222::t_ce1596caa81f01 138-160
+  s_82120e9b499222::t_ef2e4f91b6005c 9
+src/features/lsp/protocol.ts
+  s_82120e9b499222::t_e8de31b099e381 89-116
+src/i18n/locales/en.json
+  s_82120e9b499222::t_8c8ddf485eda3f 119-120
+src/App.tsx
+  s_82120e9b499222::t_0c8a21c940110b 789-795
+  s_82120e9b499222::t_e7c3be75c527ac 985
+  s_82120e9b499222::t_53f0616f362507 70-74
+  s_82120e9b499222::t_667a44a268c6df 508-536
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_6a3976184de26e 119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "30ad72a641f1729bd268a5e5586f3bba50b59266",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
