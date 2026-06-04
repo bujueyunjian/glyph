@@ -36,6 +36,21 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "txt", "md", "markdown", "json", "jsonc", "js", "jsx", "mjs", "cjs",
+          "ts", "tsx", "rs", "py", "pyw", "css", "scss", "sass", "less",
+          "html", "htm", "xml", "svg", "yaml", "yml", "toml", "ini", "conf",
+          "sh", "bash", "zsh", "sql", "go", "php", "vue", "c", "h", "cpp",
+          "cc", "cxx", "hpp", "hh", "java", "rb", "pl", "lua", "swift", "r",
+          "jl", "clj", "hs", "ps1", "cmake", "dockerfile", "log", "env"
+        ],
+        "name": "Source Code",
+        "description": "Text or source code file",
+        "role": "Editor"
+      }
     ]
   }
 }

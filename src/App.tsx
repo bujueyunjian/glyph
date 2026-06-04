@@ -13,7 +13,13 @@ import { Toaster, toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 import { getAppInfo } from "@/api/appApi";
-import { createDir, createFile, deletePath, renamePath } from "@/api/fileApi";
+import {
+  createDir,
+  createFile,
+  deletePath,
+  renamePath,
+  takeLaunchFile,
+} from "@/api/fileApi";
 import { watchWorkspace } from "@/api/workspaceApi";
 import { agentCancel, agentStream } from "@/api/agentApi";
 import { CommandPalette } from "@/components/command/CommandPalette";
@@ -1013,6 +1019,30 @@ function App() {
       unlisten?.();
     };
   }, [t]);
+
+  // 「用 Glyph 打开」:冷启动从启动参数取文件 + 运行时监听 open-external-file 事件。
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+    void (async () => {
+      try {
+        const pending = await takeLaunchFile();
+        if (pending && !disposed) openInFocused(pending);
+        const { listen } = await import("@tauri-apps/api/event");
+        const fn = await listen<string>("open-external-file", (event) => {
+          openInFocused(event.payload);
+        });
+        if (disposed) fn();
+        else unlisten = fn;
+      } catch (err) {
+        console.warn("处理外部打开文件失败(非 Tauri 上下文?):", err);
+      }
+    })();
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [openInFocused]);
 
   return (
     <>

@@ -27,3 +27,8 @@ export function renamePath(from: string, to: string): Promise<void> {
 export function deletePath(path: string): Promise<void> {
   return call<void>("delete_path", { path });
 }
+
+// 取出"用 Glyph 打开"在启动参数里传入的文件路径(无则 null)。对应 Rust launch.rs。
+export function takeLaunchFile(): Promise<string | null> {
+  return call<string | null>("take_launch_file", {});
+}
