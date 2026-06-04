@@ -27,6 +27,17 @@ fn rpc_request(id: u64, method: &str, params: Value) -> String {
     json!({ "jsonrpc": "2.0", "id": id, "method": method, "params": params }).to_string()
 }
 
+// 安全边界:对 agent → client 的请求(fs/terminal/permission 等)一律回错误。
+// Glyph 绝不借自身权限让第三方 agent 触达文件系统/终端——数据安全高于功能(见 ADR-0009)。
+fn deny_reply(req_id: u64) -> String {
+    json!({
+        "jsonrpc": "2.0",
+        "id": req_id,
+        "error": { "code": -32601, "message": "Glyph does not grant fs/terminal access to agents" }
+    })
+    .to_string()
+}
+
 fn client_init_params() -> Value {
     json!({
         "protocolVersion": 1,
@@ -94,8 +105,7 @@ fn pump_until<R: BufRead>(
         } else if message.get("method").is_some() {
             // agent → client 请求(fs/terminal/permission 等),v1 不支持 → 回错误避免挂起。
             if let Some(req_id) = message.get("id").and_then(Value::as_u64) {
-                let err = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32601, "message": "unsupported in Glyph v1" } });
-                write_line(stdin, &err.to_string())?;
+                write_line(stdin, &deny_reply(req_id))?;
             }
         }
     }
@@ -140,9 +150,10 @@ fn kill(child: &mut Child) {
     let _ = child.wait();
 }
 
-// 一次性向 ACP agent 发 prompt 取完整文本响应。agent_cmd 如 "claude-agent-acp"(用户已装的适配器)。
-#[tauri::command]
-pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String> {
+// 按用户配置的命令启动 ACP agent 子进程(stdio 全管道)。命令按空白拆 program + args,
+// 故 "claude-agent-acp" 与 "npx -y @zed-industries/claude-code-acp" 都支持。
+// 命令不存在(ENOENT)时给可执行的指引:Glyph 不内置 agent,需自备适配器。
+fn spawn_agent(agent_cmd: &str) -> Result<Child, String> {
     let mut parts = agent_cmd.split_whitespace();
     let program = parts
         .next()
@@ -159,9 +170,23 @@ pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String
     #[cfg(windows)]
     command.creation_flags(CREATE_NO_WINDOW);
 
-    let mut child = command
-        .spawn()
-        .map_err(|e| format!("启动 agent 失败 ({program}): {e}"))?;
+    command.spawn().map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            format!(
+                "未找到 agent 命令「{program}」。Glyph 不内置 AI agent,需自备 ACP 适配器:\
+                 例如 npm i -g @zed-industries/claude-code-acp(它提供 claude-agent-acp 命令),\
+                 装好后在 AI 面板填入该命令。"
+            )
+        } else {
+            format!("启动 agent 失败 ({program}): {e}")
+        }
+    })
+}
+
+// 一次性向 ACP agent 发 prompt 取完整文本响应。agent_cmd 如 "claude-agent-acp"(用户已装的适配器)。
+#[tauri::command]
+pub fn agent_oneshot(agent_cmd: String, prompt: String) -> Result<String, String> {
+    let mut child = spawn_agent(&agent_cmd)?;
     let mut stdin = child
         .stdin
         .take()
@@ -206,8 +231,7 @@ fn pump_emit<R: BufRead>(
             let _ = app.emit("agent://chunk", json!({ "turnId": turn_id, "text": text }));
         } else if message.get("method").is_some() {
             if let Some(req_id) = message.get("id").and_then(Value::as_u64) {
-                let err = json!({ "jsonrpc": "2.0", "id": req_id, "error": { "code": -32601, "message": "unsupported in Glyph v1" } });
-                write_line(stdin, &err.to_string())?;
+                write_line(stdin, &deny_reply(req_id))?;
             }
         }
     }
@@ -255,25 +279,7 @@ fn run_stream(
     agent_cmd: &str,
     prompt: &str,
 ) -> Result<(), String> {
-    let mut parts = agent_cmd.split_whitespace();
-    let program = parts
-        .next()
-        .ok_or_else(|| "agent 命令为空".to_string())?
-        .to_string();
-    let args: Vec<String> = parts.map(str::to_string).collect();
-
-    let mut command = Command::new(&program);
-    command
-        .args(&args)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    #[cfg(windows)]
-    command.creation_flags(CREATE_NO_WINDOW);
-
-    let mut child = command
-        .spawn()
-        .map_err(|e| format!("启动 agent 失败 ({program}): {e}"))?;
+    let mut child = spawn_agent(agent_cmd)?;
     let mut stdin = child
         .stdin
         .take()
@@ -349,8 +355,26 @@ pub fn agent_cancel(registry: State<'_, AgentRegistry>, turn_id: u64) {
 
 #[cfg(test)]
 mod tests {
-    use super::{extract_agent_text, response_for, rpc_request};
-    use serde_json::json;
+    use super::{client_init_params, deny_reply, extract_agent_text, response_for, rpc_request};
+    use serde_json::{json, Value};
+
+    // 安全边界回归守卫:Glyph 绝不向 agent 授予 fs/terminal 能力(改 true 即测试失败)。
+    #[test]
+    fn client_denies_fs_and_terminal_capabilities() {
+        let caps = client_init_params()["clientCapabilities"].clone();
+        assert_eq!(caps["fs"]["readTextFile"], false);
+        assert_eq!(caps["fs"]["writeTextFile"], false);
+        assert_eq!(caps["terminal"], false);
+    }
+
+    // agent → client 请求一律以错误回绝,绝不静默放行。
+    #[test]
+    fn denies_agent_requests_with_error() {
+        let v: Value = serde_json::from_str(&deny_reply(7)).unwrap();
+        assert_eq!(v["id"], 7);
+        assert!(v.get("error").is_some());
+        assert!(v.get("result").is_none());
+    }
 
     #[test]
     fn builds_jsonrpc_request() {

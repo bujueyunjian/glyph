@@ -10,9 +10,6 @@ interface StatusBarProps {
   language?: string;
   /** 语言服务器连接状态。 */
   lsp?: LspStatus;
-  onCommandPalette: () => void;
-  onSearch: () => void;
-  onToggleSplit: () => void;
 }
 
 // LSP 状态点:就绪=accent 实心,连接中=黄,未连接/未安装=灰。
@@ -22,19 +19,13 @@ const LSP_DOT: Record<string, string> = {
   unavailable: "bg-[var(--color-subtle)]",
 };
 
-const actionClass =
-  "rounded px-1.5 py-0.5 outline-none hover:bg-[var(--color-overlay)] hover:text-[var(--color-text)]";
-
-// 底部状态栏:左显当前文件/语言,右为常用功能可点入口(搜索/分屏/命令面板)。
-// 低对比、克制(设计准则 #4),代码区才是焦点;入口让功能可被发现,而非藏在快捷键后。
+// 底部状态栏:只显状态(文件 / 语言 / 语言服务器 / 版本),不放命令入口——
+// 操作归右键上下文菜单与顶部菜单栏。低对比、克制(设计准则 #4),代码区才是焦点。
 export function StatusBar({
   appVersion,
   fileName,
   language,
   lsp,
-  onCommandPalette,
-  onSearch,
-  onToggleSplit,
 }: StatusBarProps) {
   const { t } = useTranslation();
   return (
@@ -51,10 +42,10 @@ export function StatusBar({
           <span>{t("workbench.statusReady")}</span>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center gap-2">
         {lsp && lsp.state !== "off" ? (
           <span
-            className="mr-1 flex items-center gap-1"
+            className="flex items-center gap-1"
             title={
               lsp.state === "unavailable"
                 ? t("lsp.unavailable", { name: lsp.name })
@@ -67,32 +58,8 @@ export function StatusBar({
             <span className="text-[var(--color-subtle)]">{lsp.name}</span>
           </span>
         ) : null}
-        <button
-          type="button"
-          className={actionClass}
-          onClick={onSearch}
-          title="Ctrl/⌘ ⇧ F"
-        >
-          {t("statusbar.search")}
-        </button>
-        <button
-          type="button"
-          className={actionClass}
-          onClick={onToggleSplit}
-          title="Ctrl/⌘ \"
-        >
-          {t("statusbar.split")}
-        </button>
-        <button
-          type="button"
-          className={actionClass}
-          onClick={onCommandPalette}
-          title="Ctrl/⌘ ⇧ P"
-        >
-          {t("statusbar.commands")}
-        </button>
         {appVersion ? (
-          <span className="ml-1 text-[var(--color-subtle)]">v{appVersion}</span>
+          <span className="text-[var(--color-subtle)]">v{appVersion}</span>
         ) : null}
       </div>
     </footer>

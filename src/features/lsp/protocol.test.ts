@@ -7,6 +7,7 @@ import {
   hoverText,
   offsetToPosition,
   positionToOffset,
+  referencesToHits,
   toCmChanges,
   toCmCompletions,
   toCmDiagnostics,
@@ -194,6 +195,64 @@ describe("workspaceEditChanges", () => {
   it("空/非法返回空", () => {
     expect(workspaceEditChanges(null)).toEqual([]);
     expect(workspaceEditChanges({})).toEqual([]);
+  });
+});
+
+describe("referencesToHits", () => {
+  it("Location[] → 命中项(行列转 1 基 + 相对路径)", () => {
+    const result = [
+      {
+        uri: "file:///work/src/lib.rs",
+        range: {
+          start: { line: 9, character: 4 },
+          end: { line: 9, character: 7 },
+        },
+      },
+      {
+        uri: "file:///work/src/main.rs",
+        range: { start: { line: 0, character: 0 } },
+      },
+    ];
+    expect(referencesToHits(result, "/work")).toEqual([
+      {
+        path: "/work/src/lib.rs",
+        relativePath: "src/lib.rs",
+        line: 10,
+        column: 5,
+        lineText: "",
+      },
+      {
+        path: "/work/src/main.rs",
+        relativePath: "src/main.rs",
+        line: 1,
+        column: 1,
+        lineText: "",
+      },
+    ]);
+  });
+
+  it("无 rootPath 用绝对路径;缺字段项跳过;非数组返回空", () => {
+    expect(
+      referencesToHits(
+        [
+          {
+            uri: "file:///a/b.rs",
+            range: { start: { line: 0, character: 0 } },
+          },
+        ],
+        null,
+      ),
+    ).toEqual([
+      {
+        path: "/a/b.rs",
+        relativePath: "/a/b.rs",
+        line: 1,
+        column: 1,
+        lineText: "",
+      },
+    ]);
+    expect(referencesToHits([{ uri: "file:///x" }], "/work")).toEqual([]);
+    expect(referencesToHits(null, "/work")).toEqual([]);
   });
 });
 

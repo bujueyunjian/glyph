@@ -25,9 +25,12 @@ interface MenuBarProps {
   onUndo: () => void;
   onRedo: () => void;
   onFind: () => void;
+  onSearchInFiles: () => void;
   // 视图
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
+  onToggleSplit: () => void;
+  onCommandPalette: () => void;
   onOpenSettings: () => void;
   themes: Theme[];
   activeThemeId: string;
@@ -66,8 +69,11 @@ export function MenuBar(props: MenuBarProps) {
     onUndo,
     onRedo,
     onFind,
+    onSearchInFiles,
     sidebarVisible,
     onToggleSidebar,
+    onToggleSplit,
+    onCommandPalette,
     onOpenSettings,
     themes,
     activeThemeId,
@@ -242,6 +248,10 @@ export function MenuBar(props: MenuBarProps) {
               {t("edit.find")}
               <span className={shortcutClass}>Ctrl/⌘ F</span>
             </Menubar.Item>
+            <Menubar.Item className={itemClass} onSelect={onSearchInFiles}>
+              {t("search.title")}
+              <span className={shortcutClass}>Ctrl/⌘ ⇧ F</span>
+            </Menubar.Item>
           </Menubar.Content>
         </Menubar.Portal>
       </Menubar.Menu>
@@ -257,9 +267,17 @@ export function MenuBar(props: MenuBarProps) {
             align="start"
             sideOffset={4}
           >
+            <Menubar.Item className={itemClass} onSelect={onCommandPalette}>
+              {t("command.title")}
+              <span className={shortcutClass}>Ctrl/⌘ ⇧ P</span>
+            </Menubar.Item>
             <Menubar.Item className={itemClass} onSelect={onToggleSidebar}>
               {sidebarVisible ? t("view.hideSidebar") : t("view.showSidebar")}
               <span className={shortcutClass}>Ctrl/⌘ B</span>
+            </Menubar.Item>
+            <Menubar.Item className={itemClass} onSelect={onToggleSplit}>
+              {t("view.split")}
+              <span className={shortcutClass}>Ctrl/⌘ \</span>
             </Menubar.Item>
             <Menubar.Item className={itemClass} onSelect={onOpenSettings}>
               {t("settings.title")}

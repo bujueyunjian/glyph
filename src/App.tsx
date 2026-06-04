@@ -26,6 +26,7 @@ import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
 import { AgentPanel } from "@/components/command/AgentPanel";
+import { EditorContextMenu } from "@/components/editor/EditorContextMenu";
 import { FileTree } from "@/components/explorer/FileTree";
 import type { FileTreeActions } from "@/components/explorer/FileTreeNode";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
@@ -70,10 +71,12 @@ import { languageIdForExtension } from "@/features/lsp/servers";
 import {
   definitionTarget,
   offsetToPosition,
+  referencesToHits,
   toCmChanges,
   workspaceEditChanges,
 } from "@/features/lsp/protocol";
 import { lspRequest } from "@/api/lspApi";
+import type { SearchHit } from "@/types/searchTypes";
 import { checkForUpdate } from "@/features/update/checkUpdate";
 import {
   getDirName,
@@ -171,6 +174,8 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [promptReq, setPromptReq] = useState<PromptRequest | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  // 查找引用结果(非 null 时搜索面板进入覆盖模式展示引用,而非走搜索框)。
+  const [referenceHits, setReferenceHits] = useState<SearchHit[] | null>(null);
   const [treeVersion, setTreeVersion] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
@@ -191,24 +196,39 @@ function App() {
     setAgentPanelOpen(false);
   }, []);
 
-  // 向 ACP agent 流式提问:先取消上一会话,分配新 turn,响应分块经事件按 turn 过滤后追加。
+  // 数据安全:首次运行 agent 前取得知情同意——提问会发给用户自配的 agent 及其模型方,
+  // Glyph 仅本地转发、不存不传。一次性确认后持久化(localStorage),不反复打扰。
+  const ensureAgentConsent = useCallback(async () => {
+    if (localStorage.getItem("glyph.agentConsent") === "1") return true;
+    const ok = await ask(t("agent.consentBody"), {
+      title: t("agent.consentTitle"),
+      kind: "warning",
+    });
+    if (ok) localStorage.setItem("glyph.agentConsent", "1");
+    return ok;
+  }, [t]);
+
+  // 向 ACP agent 流式提问:先取知情同意,再取消上一会话、分配新 turn,响应分块按 turn 过滤追加。
   const askAgent = useCallback(
     (cmd: string, prompt: string) => {
-      const prev = agentTurnRef.current;
-      if (prev !== null) void agentCancel(prev);
-      const turn = agentTurnCounter.current + 1;
-      agentTurnCounter.current = turn;
-      agentTurnRef.current = turn; // 先于发起设置,事件抵达即可匹配(无竞态丢块)
-      setAgentResult(""); // 清空,等待流式分块
-      setAgentBusy(true);
-      void agentStream(cmd, prompt, turn).catch((err) => {
-        if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
-        agentTurnRef.current = null;
-        setAgentBusy(false);
-        toast.error(t("agent.failed", { msg: (err as Error).message }));
-      });
+      void (async () => {
+        if (!(await ensureAgentConsent())) return; // 未同意则不发起,杜绝无意识的数据外发
+        const prev = agentTurnRef.current;
+        if (prev !== null) void agentCancel(prev);
+        const turn = agentTurnCounter.current + 1;
+        agentTurnCounter.current = turn;
+        agentTurnRef.current = turn; // 先于发起设置,事件抵达即可匹配(无竞态丢块)
+        setAgentResult(""); // 清空,等待流式分块
+        setAgentBusy(true);
+        void agentStream(cmd, prompt, turn).catch((err) => {
+          if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
+          agentTurnRef.current = null;
+          setAgentBusy(false);
+          toast.error(t("agent.failed", { msg: (err as Error).message }));
+        });
+      })();
     },
-    [t],
+    [t, ensureAgentConsent],
   );
 
   // 常驻 agent 事件监听:按当前 turn 过滤,关闭后不复活对话框(prev===null 即忽略)。
@@ -370,6 +390,56 @@ function App() {
     if (view) (await import("@codemirror/search")).openSearchPanel(view);
   }, [activeView]);
 
+  // 打开跨文件搜索(清掉引用覆盖,确保进的是普通搜索而非上次的引用结果)。
+  const openSearch = useCallback(() => {
+    setReferenceHits(null);
+    setSearchOpen(true);
+  }, []);
+
+  // 右键剪贴板:经聚焦编辑器读写系统剪贴板,粘贴/剪切经 CM dispatch 以走撤销栈。
+  const clipboardFailed = useCallback(
+    (err: unknown) =>
+      toast.error(t("edit.clipboardFailed", { msg: (err as Error).message })),
+    [t],
+  );
+  const editorCopy = useCallback(() => {
+    const view = activeView();
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    if (from === to) return;
+    navigator.clipboard
+      .writeText(view.state.sliceDoc(from, to))
+      .catch(clipboardFailed);
+  }, [activeView, clipboardFailed]);
+  const editorCut = useCallback(() => {
+    const view = activeView();
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    if (from === to) return;
+    navigator.clipboard
+      .writeText(view.state.sliceDoc(from, to))
+      .then(() => {
+        view.dispatch({ changes: { from, to, insert: "" } });
+        view.focus();
+      })
+      .catch(clipboardFailed);
+  }, [activeView, clipboardFailed]);
+  const editorPaste = useCallback(() => {
+    const view = activeView();
+    if (!view) return;
+    navigator.clipboard
+      .readText()
+      .then((text) => {
+        const { from, to } = view.state.selection.main;
+        view.dispatch({
+          changes: { from, to, insert: text },
+          selection: { anchor: from + text.length },
+        });
+        view.focus();
+      })
+      .catch(clipboardFailed);
+  }, [activeView, clipboardFailed]);
+
   // 行编辑动词(注释/移动/复制/删除行):复用 CodeMirror 内置命令,经命令面板暴露
   // 以便发现(快捷键由 basicSetup 的 defaultKeymap 已绑定)。动态 import 不进首屏。
   const runLineCommand = useCallback(
@@ -505,6 +575,33 @@ function App() {
     const target = definitionTarget(result);
     if (target) openHit(target.path, target.line + 1); // LSP 0 基行 → openHit 1 基
   }, [activeView, lspStatus.serverId, effectiveActive, openHit]);
+
+  // 查找引用:请求 LSP references,把命中喂给搜索面板覆盖模式展示(点击跳转)。
+  const doFindReferences = useCallback(async () => {
+    const view = activeView();
+    if (!view || lspStatus.serverId == null || !effectiveActive) return;
+    let result: unknown;
+    try {
+      result = await lspRequest(lspStatus.serverId, "textDocument/references", {
+        textDocument: { uri: `file://${effectiveActive}` },
+        position: offsetToPosition(
+          view.state.doc,
+          view.state.selection.main.head,
+        ),
+        context: { includeDeclaration: true },
+      });
+    } catch (err) {
+      toast.error(t("lsp.referencesFailed", { msg: (err as Error).message }));
+      return;
+    }
+    const hits = referencesToHits(result, rootPath);
+    if (hits.length === 0) {
+      toast(t("lsp.referencesNone"));
+      return;
+    }
+    setReferenceHits(hits);
+    setSearchOpen(true);
+  }, [activeView, lspStatus.serverId, effectiveActive, rootPath, t]);
 
   // 把 TextEdit 应用到某文件:打开它,轮询等实例就绪后排序 dispatch(应对懒加载时序)。
   const applyEditsToFile = useCallback(
@@ -782,7 +879,7 @@ function App() {
         title: t("search.title"),
         group: t("menu.edit"),
         shortcut: "Ctrl/⌘ ⇧ F",
-        perform: () => setSearchOpen(true),
+        perform: openSearch,
       },
       {
         id: "markdown.preview",
@@ -847,6 +944,13 @@ function App() {
               group: t("menu.edit"),
               shortcut: "F12",
               perform: () => void goToDefinition(),
+            },
+            {
+              id: "lsp.findReferences",
+              title: t("lsp.findReferences"),
+              group: t("menu.edit"),
+              shortcut: "Shift F12",
+              perform: () => void doFindReferences(),
             },
             {
               id: "lsp.format",
@@ -1051,9 +1155,11 @@ function App() {
       transformWholeDoc,
       lspStatus.serverId,
       goToDefinition,
+      doFindReferences,
       doFormatDocument,
       doRename,
       doCheckUpdate,
+      openSearch,
     ],
   );
 
@@ -1076,10 +1182,11 @@ function App() {
   // 全局快捷键:打开/保存/另存为/命令面板/关闭标签。
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // F12 转到定义(非 ctrl/meta 键,先于下面的修饰键早返回处理)。
+      // F12 转到定义 / Shift+F12 查找引用(非 ctrl/meta 键,早返回)。
       if (event.key === "F12" && lspStatus.serverId != null) {
         event.preventDefault();
-        void goToDefinition();
+        if (event.shiftKey) void doFindReferences();
+        else void goToDefinition();
         return;
       }
       if (!(event.ctrlKey || event.metaKey)) return;
@@ -1092,6 +1199,7 @@ function App() {
         setQuickOpenOpen((prev) => !prev);
       } else if (event.shiftKey && key === "f") {
         event.preventDefault();
+        setReferenceHits(null);
         setSearchOpen((prev) => !prev);
       } else if (event.shiftKey && key === "v") {
         event.preventDefault();
@@ -1143,6 +1251,7 @@ function App() {
     setFocusedPane,
     lspStatus.serverId,
     goToDefinition,
+    doFindReferences,
   ]);
 
   // 会话恢复:启动时一次,打开上次会话的文件(缺=空态;坏 JSON 已在 loadSession 响亮报错)。
@@ -1285,9 +1394,6 @@ function App() {
               effectiveActive ? getFileExtension(effectiveActive) : undefined
             }
             lsp={lspStatus}
-            onCommandPalette={() => setPaletteOpen(true)}
-            onSearch={() => setSearchOpen(true)}
-            onToggleSplit={toggleSplit}
           />
         }
         sidebar={
@@ -1319,8 +1425,11 @@ function App() {
             onUndo={editorUndo}
             onRedo={editorRedo}
             onFind={editorFind}
+            onSearchInFiles={openSearch}
             sidebarVisible={sidebarVisible}
             onToggleSidebar={() => setSidebarVisible((prev) => !prev)}
+            onToggleSplit={toggleSplit}
+            onCommandPalette={() => setPaletteOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             themes={themes}
             activeThemeId={activeTheme.id}
@@ -1342,68 +1451,96 @@ function App() {
             />
           ) : null}
           <div className="flex min-h-0 flex-1">
-            <div
-              className="min-w-0 flex-1"
-              onMouseDownCapture={() => setFocusedPane("main")}
+            <EditorContextMenu
+              lspReady={lspStatus.state === "ready"}
+              onCut={editorCut}
+              onCopy={editorCopy}
+              onPaste={editorPaste}
+              onFind={() => void editorFind()}
+              onGoToDefinition={() => void goToDefinition()}
+              onFindReferences={() => void doFindReferences()}
+              onRename={doRename}
+              onFormat={() => void doFormatDocument()}
+              onCommandPalette={() => setPaletteOpen(true)}
             >
-              {tabs.length > 0 ? (
-                <Suspense fallback={<div className="h-full w-full" />}>
-                  {tabs.map((tab) => (
-                    <div
-                      key={tab.path}
-                      className={
-                        tab.path === activePath ? "h-full w-full" : "hidden"
-                      }
-                    >
-                      <CodeEditor
-                        ref={(instance) => {
-                          if (instance)
-                            editorRefs.current.set(tab.path, instance);
-                          else editorRefs.current.delete(tab.path);
-                        }}
-                        initialValue={tab.initialContent}
-                        initialCursor={restoredCursorsRef.current[tab.path]}
-                        extension={getFileExtension(tab.path)}
-                        themeKind={activeTheme.kind}
-                        settings={settings}
-                        lsp={
-                          focusedPane === "main" && tab.path === effectiveActive
-                            ? lspCtx
-                            : undefined
-                        }
-                        onDocChange={() => handleDocChange(tab.path, "main")}
-                      />
-                    </div>
-                  ))}
-                </Suspense>
-              ) : (
-                <EmptyState />
-              )}
-            </div>
-            {splitPath ? (
               <div
-                className="min-w-0 flex-1 border-l border-[var(--color-border)]"
-                onMouseDownCapture={() => setFocusedPane("split")}
+                className="min-w-0 flex-1"
+                onMouseDownCapture={() => setFocusedPane("main")}
               >
-                <Suspense fallback={<div className="h-full w-full" />}>
-                  <CodeEditor
-                    key={splitPath}
-                    ref={(instance) => {
-                      if (instance) splitRefs.current.set(splitPath, instance);
-                      else splitRefs.current.delete(splitPath);
-                    }}
-                    initialValue={
-                      tabs.find((tb) => tb.path === splitPath)
-                        ?.initialContent ?? ""
-                    }
-                    extension={getFileExtension(splitPath)}
-                    themeKind={activeTheme.kind}
-                    settings={settings}
-                    lsp={focusedPane === "split" ? lspCtx : undefined}
-                    onDocChange={() => handleDocChange(splitPath, "split")}
-                  />
-                </Suspense>
+                {tabs.length > 0 ? (
+                  <Suspense fallback={<div className="h-full w-full" />}>
+                    {tabs.map((tab) => (
+                      <div
+                        key={tab.path}
+                        className={
+                          tab.path === activePath ? "h-full w-full" : "hidden"
+                        }
+                      >
+                        <CodeEditor
+                          ref={(instance) => {
+                            if (instance)
+                              editorRefs.current.set(tab.path, instance);
+                            else editorRefs.current.delete(tab.path);
+                          }}
+                          initialValue={tab.initialContent}
+                          initialCursor={restoredCursorsRef.current[tab.path]}
+                          extension={getFileExtension(tab.path)}
+                          themeKind={activeTheme.kind}
+                          settings={settings}
+                          lsp={
+                            focusedPane === "main" &&
+                            tab.path === effectiveActive
+                              ? lspCtx
+                              : undefined
+                          }
+                          onDocChange={() => handleDocChange(tab.path, "main")}
+                        />
+                      </div>
+                    ))}
+                  </Suspense>
+                ) : (
+                  <EmptyState />
+                )}
               </div>
+            </EditorContextMenu>
+            {splitPath ? (
+              <EditorContextMenu
+                lspReady={lspStatus.state === "ready"}
+                onCut={editorCut}
+                onCopy={editorCopy}
+                onPaste={editorPaste}
+                onFind={() => void editorFind()}
+                onGoToDefinition={() => void goToDefinition()}
+                onFindReferences={() => void doFindReferences()}
+                onRename={doRename}
+                onFormat={() => void doFormatDocument()}
+                onCommandPalette={() => setPaletteOpen(true)}
+              >
+                <div
+                  className="min-w-0 flex-1 border-l border-[var(--color-border)]"
+                  onMouseDownCapture={() => setFocusedPane("split")}
+                >
+                  <Suspense fallback={<div className="h-full w-full" />}>
+                    <CodeEditor
+                      key={splitPath}
+                      ref={(instance) => {
+                        if (instance)
+                          splitRefs.current.set(splitPath, instance);
+                        else splitRefs.current.delete(splitPath);
+                      }}
+                      initialValue={
+                        tabs.find((tb) => tb.path === splitPath)
+                          ?.initialContent ?? ""
+                      }
+                      extension={getFileExtension(splitPath)}
+                      themeKind={activeTheme.kind}
+                      settings={settings}
+                      lsp={focusedPane === "split" ? lspCtx : undefined}
+                      onDocChange={() => handleDocChange(splitPath, "split")}
+                    />
+                  </Suspense>
+                </div>
+              </EditorContextMenu>
             ) : null}
             {previewOpen && activeIsMarkdown ? (
               <div className="min-w-0 flex-1 border-l border-[var(--color-border)]">
@@ -1442,9 +1579,14 @@ function App() {
       />
       <SearchPanel
         open={searchOpen}
-        onOpenChange={setSearchOpen}
+        onOpenChange={(next) => {
+          setSearchOpen(next);
+          if (!next) setReferenceHits(null); // 关闭即退出引用覆盖模式
+        }}
         rootPath={rootPath}
         onOpenHit={openHit}
+        overrideHits={referenceHits}
+        overrideTitle={t("lsp.referencesTitle")}
       />
       <SettingsPanel
         open={settingsOpen}

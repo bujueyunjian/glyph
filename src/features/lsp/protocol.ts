@@ -114,6 +114,42 @@ export function toCmChanges(edits: unknown, doc: Text): CmChange[] {
   return out;
 }
 
+export interface RefHit {
+  path: string;
+  relativePath: string;
+  line: number;
+  column: number;
+  lineText: string;
+}
+
+// LSP references(Location[])→ 搜索结果面板可用的命中项(行/列转 1 基;无行文本)。
+export function referencesToHits(
+  result: unknown,
+  rootPath: string | null,
+): RefHit[] {
+  if (!Array.isArray(result)) return [];
+  const out: RefHit[] = [];
+  for (const raw of result) {
+    const loc = raw as { uri?: unknown; range?: { start?: LspPosition } };
+    if (typeof loc.uri !== "string" || !loc.range?.start) continue;
+    const path = loc.uri.startsWith("file://")
+      ? decodeURIComponent(loc.uri.slice("file://".length))
+      : loc.uri;
+    const relativePath =
+      rootPath && path.startsWith(rootPath)
+        ? path.slice(rootPath.length).replace(/^\//, "")
+        : path;
+    out.push({
+      path,
+      relativePath,
+      line: loc.range.start.line + 1,
+      column: loc.range.start.character + 1,
+      lineText: "",
+    });
+  }
+  return out;
+}
+
 export interface DocSymbol {
   name: string;
   line: number;
