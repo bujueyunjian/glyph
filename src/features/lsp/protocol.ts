@@ -71,6 +71,21 @@ export function toCmCompletions(result: unknown): CmCompletion[] {
   return out;
 }
 
+// LSP Hover.contents(string | MarkedString | MarkupContent | 其数组)→ 纯文本。
+export function hoverText(result: unknown): string | null {
+  const contents = (result as { contents?: unknown } | null)?.contents;
+  if (contents == null) return null;
+  const one = (c: unknown): string => {
+    if (typeof c === "string") return c;
+    const value = (c as { value?: unknown })?.value;
+    return typeof value === "string" ? value : "";
+  };
+  const text = Array.isArray(contents)
+    ? contents.map(one).filter(Boolean).join("\n\n")
+    : one(contents);
+  return text.trim() || null;
+}
+
 export type CmSeverity = "error" | "warning" | "info" | "hint";
 
 export interface CmDiagnostic {

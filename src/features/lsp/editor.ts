@@ -5,11 +5,21 @@ import {
 } from "@codemirror/autocomplete";
 import { setDiagnostics } from "@codemirror/lint";
 import type { Extension } from "@codemirror/state";
-import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
+import {
+  EditorView,
+  hoverTooltip,
+  ViewPlugin,
+  type ViewUpdate,
+} from "@codemirror/view";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import { lspRequest, lspSend } from "@/api/lspApi";
-import { offsetToPosition, toCmCompletions, toCmDiagnostics } from "./protocol";
+import {
+  hoverText,
+  offsetToPosition,
+  toCmCompletions,
+  toCmDiagnostics,
+} from "./protocol";
 
 // 把已验证的 LSP 后端接入 CodeMirror:补全源(textDocument/completion)+ 诊断波浪线
 // (publishDiagnostics → lint)+ didOpen/didChange/didClose 生命周期。
@@ -134,9 +144,36 @@ function syncPlugin(ctx: LspEditorContext) {
   );
 }
 
+// 悬停提示:向服务器要 hover,渲染类型/文档(纯文本,防 XSS;Markdown 富渲染留后续)。
+function lspHover(ctx: LspEditorContext) {
+  return hoverTooltip(async (view, pos) => {
+    let result: unknown;
+    try {
+      result = await lspRequest(ctx.serverId, "textDocument/hover", {
+        textDocument: { uri: ctx.uri },
+        position: offsetToPosition(view.state.doc, pos),
+      });
+    } catch {
+      return null;
+    }
+    const text = hoverText(result);
+    if (!text) return null;
+    return {
+      pos,
+      create() {
+        const dom = document.createElement("div");
+        dom.className = "cm-lsp-hover";
+        dom.textContent = text; // textContent 防注入
+        return { dom };
+      },
+    };
+  });
+}
+
 export function lspEditorExtensions(ctx: LspEditorContext): Extension {
   return [
     autocompletion({ override: [completionSource(ctx)] }),
+    lspHover(ctx),
     syncPlugin(ctx),
   ];
 }

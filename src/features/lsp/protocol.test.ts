@@ -2,6 +2,7 @@ import { Text } from "@codemirror/state";
 import { describe, expect, it } from "vitest";
 
 import {
+  hoverText,
   offsetToPosition,
   positionToOffset,
   toCmCompletions,
@@ -80,5 +81,21 @@ describe("toCmDiagnostics", () => {
   it("缺 range/message 的项跳过;非数组返回空", () => {
     expect(toCmDiagnostics([{ message: "no range" }], doc)).toEqual([]);
     expect(toCmDiagnostics(null, doc)).toEqual([]);
+  });
+});
+
+describe("hoverText", () => {
+  it("string / MarkupContent / MarkedString 数组", () => {
+    expect(hoverText({ contents: "fn main()" })).toBe("fn main()");
+    expect(hoverText({ contents: { kind: "markdown", value: "`i32`" } })).toBe(
+      "`i32`",
+    );
+    expect(hoverText({ contents: [{ value: "a" }, "b"] })).toBe("a\n\nb");
+  });
+
+  it("空/缺内容返回 null", () => {
+    expect(hoverText(null)).toBeNull();
+    expect(hoverText({ contents: "  " })).toBeNull();
+    expect(hoverText({})).toBeNull();
   });
 });

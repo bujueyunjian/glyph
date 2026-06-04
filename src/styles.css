@@ -228,6 +228,19 @@ body {
   font-style: italic;
 }
 
+/* LSP 悬停提示:克制的代码风格卡片 */
+.cm-lsp-hover {
+  max-width: 480px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 0.4em 0.6em;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--color-text);
+}
+
 /* 动效只为定位,且尊重 reduced-motion(设计准则 #7) */
 @media (prefers-reduced-motion: reduce) {
   *,
