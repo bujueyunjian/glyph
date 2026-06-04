@@ -1,0 +1,35 @@
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_22979607b30ec4 121-129
+src/features/update/version.test.ts
+  s_82120e9b499222::t_3cbf0a9d5885f6 1-26
+src/features/update/version.ts
+  s_82120e9b499222::t_284e5e331f744c 1-19
+src-tauri/tauri.conf.json
+  s_82120e9b499222::t_2635ede1af7287 27
+  s_82120e9b499222::t_4bf766a1699c20 43-97
+src/App.tsx
+  s_82120e9b499222::t_c94456a92448eb 945
+  s_82120e9b499222::t_88e38fe764be1f 72
+  s_82120e9b499222::t_6bd8ec66d90901 504-530
+  s_82120e9b499222::t_fe1ff46b762614 910-915
+src/features/update/checkUpdate.ts
+  s_82120e9b499222::t_b719d13cbcc76a 1-33
+src/i18n/locales/en.json
+  s_82120e9b499222::t_c41ceb93381058 121-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6f50cf593d185493cf65672d6436b6dee28d251b",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
