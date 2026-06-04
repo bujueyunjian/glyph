@@ -81,6 +81,17 @@ fn resolve_cwd(cwd: Option<String>) -> String {
     }
 }
 
+// session/new 参数:cwd(作用域)+ mcpServers(转发用户配置的 MCP server,由 agent 连接,见 ADR-0010)。
+// Glyph 不解析 MCP 协议,只把配置原样转发;非数组的 mcpServers 归一为空数组。
+fn session_new_params(cwd: &str, mcp_servers: &Value) -> Value {
+    let servers = if mcp_servers.is_array() {
+        mcp_servers.clone()
+    } else {
+        json!([])
+    };
+    json!({ "cwd": cwd, "mcpServers": servers })
+}
+
 fn write_line(stdin: &mut ChildStdin, line: &str) -> Result<(), String> {
     stdin
         .write_all(line.as_bytes())
@@ -127,6 +138,7 @@ fn agent_turn<R: BufRead>(
     stdin: &mut ChildStdin,
     prompt: &str,
     cwd: &str,
+    mcp_servers: &Value,
     answer: &mut String,
 ) -> Result<(), String> {
     write_line(stdin, &rpc_request(0, "initialize", client_init_params()))?;
@@ -134,7 +146,7 @@ fn agent_turn<R: BufRead>(
 
     write_line(
         stdin,
-        &rpc_request(1, "session/new", json!({ "cwd": cwd, "mcpServers": [] })),
+        &rpc_request(1, "session/new", session_new_params(cwd, mcp_servers)),
     )?;
     let session = pump_until(reader, stdin, 1, answer)?;
     let session_id = session
@@ -198,8 +210,10 @@ pub fn agent_oneshot(
     agent_cmd: String,
     prompt: String,
     cwd: Option<String>,
+    mcp_servers: Option<Value>,
 ) -> Result<String, String> {
     let cwd = resolve_cwd(cwd);
+    let mcp_servers = mcp_servers.unwrap_or_else(|| json!([]));
     let mut child = spawn_agent(&agent_cmd)?;
     let mut stdin = child
         .stdin
@@ -212,7 +226,14 @@ pub fn agent_oneshot(
     let mut reader = BufReader::new(stdout);
     let mut answer = String::new();
 
-    let outcome = agent_turn(&mut reader, &mut stdin, &prompt, &cwd, &mut answer);
+    let outcome = agent_turn(
+        &mut reader,
+        &mut stdin,
+        &prompt,
+        &cwd,
+        &mcp_servers,
+        &mut answer,
+    );
     kill(&mut child);
     outcome.map(|()| answer)
 }
@@ -257,6 +278,7 @@ fn stream_turn<R: BufRead>(
     stdin: &mut ChildStdin,
     prompt: &str,
     cwd: &str,
+    mcp_servers: &Value,
     turn_id: u64,
 ) -> Result<(), String> {
     let mut scratch = String::new();
@@ -265,7 +287,7 @@ fn stream_turn<R: BufRead>(
 
     write_line(
         stdin,
-        &rpc_request(1, "session/new", json!({ "cwd": cwd, "mcpServers": [] })),
+        &rpc_request(1, "session/new", session_new_params(cwd, mcp_servers)),
     )?;
     let session = pump_until(reader, stdin, 1, &mut scratch)?;
     let session_id = session
@@ -291,6 +313,7 @@ fn run_stream(
     agent_cmd: &str,
     prompt: &str,
     cwd: &str,
+    mcp_servers: &Value,
 ) -> Result<(), String> {
     let mut child = spawn_agent(agent_cmd)?;
     let mut stdin = child
@@ -319,7 +342,15 @@ fn run_stream(
     // 登记子进程供取消;turn 自然结束/出错后移除并回收(取消可能已先移除)。
     children.lock().unwrap().insert(turn_id, child);
     let mut reader = BufReader::new(stdout);
-    let outcome = stream_turn(app, &mut reader, &mut stdin, prompt, cwd, turn_id);
+    let outcome = stream_turn(
+        app,
+        &mut reader,
+        &mut stdin,
+        prompt,
+        cwd,
+        mcp_servers,
+        turn_id,
+    );
     if let Some(mut child) = children.lock().unwrap().remove(&turn_id) {
         kill(&mut child);
     }
@@ -345,11 +376,21 @@ pub fn agent_stream(
     prompt: String,
     turn_id: u64,
     cwd: Option<String>,
+    mcp_servers: Option<Value>,
 ) {
     let children = Arc::clone(&registry.children);
     let cwd = resolve_cwd(cwd);
+    let mcp_servers = mcp_servers.unwrap_or_else(|| json!([]));
     std::thread::spawn(move || {
-        match run_stream(&app, &children, turn_id, &agent_cmd, &prompt, &cwd) {
+        match run_stream(
+            &app,
+            &children,
+            turn_id,
+            &agent_cmd,
+            &prompt,
+            &cwd,
+            &mcp_servers,
+        ) {
             Ok(()) => {
                 let _ = app.emit("agent://done", json!({ "turnId": turn_id }));
             }
@@ -372,8 +413,23 @@ pub fn agent_cancel(registry: State<'_, AgentRegistry>, turn_id: u64) {
 mod tests {
     use super::{
         client_init_params, deny_reply, extract_agent_text, resolve_cwd, response_for, rpc_request,
+        session_new_params,
     };
     use serde_json::{json, Value};
+
+    // MCP 转发:用户配置的 server 原样进 session/new.mcpServers;非数组归一为空(见 ADR-0010)。
+    #[test]
+    fn session_new_forwards_mcp_servers() {
+        let servers = json!([{ "name": "fs", "command": "mcp-fs", "args": [], "env": [] }]);
+        let params = session_new_params("/work", &servers);
+        assert_eq!(params["cwd"], "/work");
+        assert_eq!(params["mcpServers"], servers);
+        // 非数组 → 空数组(不把坏配置塞给 agent)
+        assert_eq!(
+            session_new_params("/w", &json!(null))["mcpServers"],
+            json!([])
+        );
+    }
 
     // 工作目录收敛:传入工作区根则用它;缺省/空白回退进程目录(非空)。
     #[test]

@@ -78,6 +78,7 @@
 - ✅ [0046] **Agent 作用域收敛**(ADR-0009 后续):agent cwd 钉到打开的工作区根(`resolve_cwd`,缺省回退进程目录)+ 回归测试,不再默认暴露打包 app 的启动目录(可能 `/`)
 - ✅ [0047] **Markdown 标题大纲**(支柱②):大纲面板对 Markdown 走纯前端 `markdownHeadings`(跳过围栏代码块)解析标题,**无需 LSP** 即可用 + 3 单测;`canResolve` 区分 MD/LSP 空态
 - ✅ [0048] **Markdown 任务列表**(支柱②):`toggleTaskList`(`- [ ] ` 切换,含已勾选去除)+ 2 单测,命令面板 mdfmt 组
+- ✅ [ADR-0010] **MCP 走 ACP 转发,不引 rmcp**(部分取代 0008):联网核实 ACP `session/new.mcpServers` 由 agent 连接 → Glyph 只转发用户配置的 MCP server,**零新依赖、守轻**。落地拆解见 ADR(配置类型/设置编辑/`session/new` 接入)
 - ✅ 发布 v0.0.2 → **v0.0.11**(逐版 4 平台 CI 绿;后续改批量发版)
 
 **剩余(硬卡外部资源/真机验证,headless 已做到极限)**：
