@@ -74,6 +74,7 @@
 - ✅ MD 链接 Live Preview(只留文本)· 字体族设置 · 关闭其他/全部标签 · **AI Agent 侧栏**(命令配置+内联追问+流式)
 - ✅ [0043] LSP 格式化 + 重命名(WorkspaceEdit)+ 文档符号(QuickOpen `@`)+ 更新检查
 - ✅ [0044] **查找引用**(references→搜索面板覆盖模式)· **编辑器右键上下文菜单**(剪贴板/查找/LSP 组/命令面板)· **状态栏瘦身为纯状态 + 命令归位菜单栏**(视图:命令面板/分屏;编辑:跨文件搜索)· **Agent 数据安全**(首用知情同意 + `deny_reply` 能力否决边界 + 2 回归测试,[ADR-0009](../adr/0009-agent-data-security.md))· agent 未装的可执行报错
+- ✅ [0045] **文档大纲面板**(`outlineSymbols` 带层级 depth + 单测;documentSymbol 拉取,缩进/kind/点击跳转;视图菜单 + `Ctrl/⌘⇧O`;Playwright 验面板壳/needsLsp 态)
 - ✅ 发布 v0.0.2 → **v0.0.11**(逐版 4 平台 CI 绿;后续改批量发版)
 
 **剩余(硬卡外部资源/真机验证,headless 已做到极限)**：

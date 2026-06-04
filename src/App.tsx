@@ -26,6 +26,7 @@ import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
 import { AgentPanel } from "@/components/command/AgentPanel";
+import { OutlinePanel } from "@/components/command/OutlinePanel";
 import { EditorContextMenu } from "@/components/editor/EditorContextMenu";
 import { FileTree } from "@/components/explorer/FileTree";
 import type { FileTreeActions } from "@/components/explorer/FileTreeNode";
@@ -71,9 +72,11 @@ import { languageIdForExtension } from "@/features/lsp/servers";
 import {
   definitionTarget,
   offsetToPosition,
+  outlineSymbols,
   referencesToHits,
   toCmChanges,
   workspaceEditChanges,
+  type OutlineSymbol,
 } from "@/features/lsp/protocol";
 import { lspRequest } from "@/api/lspApi";
 import type { SearchHit } from "@/types/searchTypes";
@@ -176,6 +179,10 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   // 查找引用结果(非 null 时搜索面板进入覆盖模式展示引用,而非走搜索框)。
   const [referenceHits, setReferenceHits] = useState<SearchHit[] | null>(null);
+  // 文档大纲面板:开关 + 当前文件符号 + 拉取中。
+  const [outlineOpen, setOutlineOpen] = useState(false);
+  const [outlineSyms, setOutlineSyms] = useState<OutlineSymbol[]>([]);
+  const [outlineLoading, setOutlineLoading] = useState(false);
   const [treeVersion, setTreeVersion] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
@@ -693,6 +700,32 @@ function App() {
     settings.insertSpaces,
   ]);
 
+  // 文档大纲:面板开启 + 有聚焦文件 + 语言服务器就绪时拉取符号(切文件自动刷新)。
+  // 只在打开/切文件时拉,不挂打字热路径(符号变更靠重开或切换刷新,守延迟高线)。
+  useEffect(() => {
+    if (!outlineOpen || lspStatus.serverId == null || !effectiveActive) {
+      setOutlineSyms([]);
+      return;
+    }
+    let cancelled = false;
+    setOutlineLoading(true);
+    void lspRequest(lspStatus.serverId, "textDocument/documentSymbol", {
+      textDocument: { uri: `file://${effectiveActive}` },
+    })
+      .then((result) => {
+        if (!cancelled) setOutlineSyms(outlineSymbols(result));
+      })
+      .catch(() => {
+        if (!cancelled) setOutlineSyms([]);
+      })
+      .finally(() => {
+        if (!cancelled) setOutlineLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [outlineOpen, lspStatus.serverId, effectiveActive]);
+
   // 检查更新:比对 GitHub 最新发布,有则提示并可跳下载页(不自动装,那需签名/证书)。
   const doCheckUpdate = useCallback(async () => {
     if (!appVersion) {
@@ -873,6 +906,13 @@ function App() {
         group: t("menu.view"),
         shortcut: "Ctrl/⌘ ,",
         perform: () => setSettingsOpen(true),
+      },
+      {
+        id: "view.outline",
+        title: t("outline.title"),
+        group: t("menu.view"),
+        shortcut: "Ctrl/⌘ ⇧ O",
+        perform: () => setOutlineOpen((prev) => !prev),
       },
       {
         id: "search.files",
@@ -1204,6 +1244,9 @@ function App() {
       } else if (event.shiftKey && key === "v") {
         event.preventDefault();
         setPreviewOpen((prev) => !prev);
+      } else if (event.shiftKey && key === "o") {
+        event.preventDefault();
+        setOutlineOpen((prev) => !prev);
       } else if (key === "o") {
         event.preventDefault();
         void open();
@@ -1429,6 +1472,7 @@ function App() {
             sidebarVisible={sidebarVisible}
             onToggleSidebar={() => setSidebarVisible((prev) => !prev)}
             onToggleSplit={toggleSplit}
+            onToggleOutline={() => setOutlineOpen((prev) => !prev)}
             onCommandPalette={() => setPaletteOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             themes={themes}
@@ -1557,6 +1601,15 @@ function App() {
                 busy={agentBusy}
                 onSend={(prompt) => askAgent(agentCmd, prompt)}
                 onClose={closeAgentPanel}
+              />
+            ) : null}
+            {outlineOpen ? (
+              <OutlinePanel
+                symbols={outlineSyms}
+                loading={outlineLoading}
+                hasLsp={lspStatus.serverId != null}
+                onGoToLine={(line) => goToLine(line + 1)}
+                onClose={() => setOutlineOpen(false)}
               />
             ) : null}
           </div>

@@ -85,6 +85,12 @@
   "preview": {
     "title": "Markdown Preview"
   },
+  "outline": {
+    "title": "Outline",
+    "loading": "Loading symbols…",
+    "empty": "No symbols",
+    "needsLsp": "Needs a language server"
+  },
   "mdfmt": {
     "group": "Markdown Format",
     "bold": "Bold",

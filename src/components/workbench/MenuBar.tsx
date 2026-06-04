@@ -30,6 +30,7 @@ interface MenuBarProps {
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
   onToggleSplit: () => void;
+  onToggleOutline: () => void;
   onCommandPalette: () => void;
   onOpenSettings: () => void;
   themes: Theme[];
@@ -73,6 +74,7 @@ export function MenuBar(props: MenuBarProps) {
     sidebarVisible,
     onToggleSidebar,
     onToggleSplit,
+    onToggleOutline,
     onCommandPalette,
     onOpenSettings,
     themes,
@@ -278,6 +280,10 @@ export function MenuBar(props: MenuBarProps) {
             <Menubar.Item className={itemClass} onSelect={onToggleSplit}>
               {t("view.split")}
               <span className={shortcutClass}>Ctrl/⌘ \</span>
+            </Menubar.Item>
+            <Menubar.Item className={itemClass} onSelect={onToggleOutline}>
+              {t("outline.title")}
+              <span className={shortcutClass}>Ctrl/⌘ ⇧ O</span>
             </Menubar.Item>
             <Menubar.Item className={itemClass} onSelect={onOpenSettings}>
               {t("settings.title")}

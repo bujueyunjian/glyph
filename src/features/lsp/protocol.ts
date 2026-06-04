@@ -186,6 +186,45 @@ export function flattenSymbols(result: unknown): DocSymbol[] {
   return out;
 }
 
+export interface OutlineSymbol {
+  name: string;
+  line: number;
+  kind?: number;
+  depth: number;
+}
+
+// LSP documentSymbol → 保留层级的大纲(depth 供缩进)。兼容层级 DocumentSymbol[] 与扁平 SymbolInformation[]。
+// 与 flattenSymbols 的区别:这里带 depth(大纲面板需要缩进),后者纯扁平(QuickOpen `@` 用)。
+export function outlineSymbols(result: unknown): OutlineSymbol[] {
+  if (!Array.isArray(result)) return [];
+  const out: OutlineSymbol[] = [];
+  const visit = (nodes: unknown[], depth: number) => {
+    for (const raw of nodes) {
+      const n = raw as {
+        name?: unknown;
+        kind?: unknown;
+        range?: { start?: LspPosition };
+        selectionRange?: { start?: LspPosition };
+        location?: { range?: { start?: LspPosition } };
+        children?: unknown;
+      };
+      const start =
+        n.selectionRange?.start ?? n.range?.start ?? n.location?.range?.start;
+      if (typeof n.name === "string" && start) {
+        out.push({
+          name: n.name,
+          line: start.line,
+          kind: typeof n.kind === "number" ? n.kind : undefined,
+          depth,
+        });
+      }
+      if (Array.isArray(n.children)) visit(n.children, depth + 1);
+    }
+  };
+  visit(result, 0);
+  return out;
+}
+
 export interface FileEdits {
   path: string;
   edits: unknown[];

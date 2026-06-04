@@ -85,6 +85,12 @@
   "preview": {
     "title": "Markdown 预览"
   },
+  "outline": {
+    "title": "文档大纲",
+    "loading": "正在加载符号…",
+    "empty": "无符号",
+    "needsLsp": "需要语言服务器"
+  },
   "mdfmt": {
     "group": "Markdown 格式",
     "bold": "粗体",
