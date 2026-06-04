@@ -69,6 +69,7 @@ import type { LspEditorContext } from "@/features/lsp/editor";
 import { languageIdForExtension } from "@/features/lsp/servers";
 import { definitionTarget, offsetToPosition } from "@/features/lsp/protocol";
 import { lspRequest } from "@/api/lspApi";
+import { checkForUpdate } from "@/features/update/checkUpdate";
 import {
   getDirName,
   getFileExtension,
@@ -500,6 +501,33 @@ function App() {
     if (target) openHit(target.path, target.line + 1); // LSP 0 基行 → openHit 1 基
   }, [activeView, lspStatus.serverId, effectiveActive, openHit]);
 
+  // 检查更新:比对 GitHub 最新发布,有则提示并可跳下载页(不自动装,那需签名/证书)。
+  const doCheckUpdate = useCallback(async () => {
+    if (!appVersion) {
+      toast.error(t("update.unknownVersion"));
+      return;
+    }
+    toast(t("update.checking"));
+    try {
+      const info = await checkForUpdate(appVersion);
+      if (info.available) {
+        toast(t("update.available", { version: info.latest }), {
+          action: {
+            label: t("update.download"),
+            onClick: () =>
+              void import("@tauri-apps/plugin-opener").then((m) =>
+                m.openUrl(info.url),
+              ),
+          },
+        });
+      } else {
+        toast.success(t("update.upToDate", { version: appVersion }));
+      }
+    } catch (err) {
+      toast.error(t("update.failed", { msg: (err as Error).message }));
+    }
+  }, [appVersion, t]);
+
   // 编辑回调:标脏 + (预览开启时)防抖刷新 Markdown 预览内容(不阻塞打字热路径)。
   const handleDocChange = useCallback(
     (path: string, pane: "main" | "split") => {
@@ -879,6 +907,12 @@ function App() {
               ),
           }),
       },
+      {
+        id: "update.check",
+        title: t("update.check"),
+        group: t("menu.help"),
+        perform: () => void doCheckUpdate(),
+      },
       ...themes.map((th) => ({
         id: `theme.${th.id}`,
         title: `${t("menu.theme")}: ${th.label}`,
@@ -908,6 +942,7 @@ function App() {
       transformWholeDoc,
       lspStatus.serverId,
       goToDefinition,
+      doCheckUpdate,
     ],
   );
 

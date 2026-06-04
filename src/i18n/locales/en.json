@@ -118,6 +118,15 @@
     "unavailable": "{{name}} not connected (not installed or failed to start)",
     "goToDefinition": "Go to Definition"
   },
+  "update": {
+    "check": "Check for Updates",
+    "checking": "Checking for updates…",
+    "available": "New version v{{version}} available",
+    "download": "Download",
+    "upToDate": "Up to date (v{{version}})",
+    "failed": "Update check failed: {{msg}}",
+    "unknownVersion": "Cannot determine current version (not in Tauri?)"
+  },
   "file": {
     "open": "Open",
     "openFolder": "Open Folder",
