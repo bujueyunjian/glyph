@@ -1,16 +1,15 @@
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { StatusBar } from "./StatusBar";
-
 interface WorkbenchLayoutProps {
-  appVersion?: string;
   /** 当前文档标签(文件名),脏文件由调用方加 • 标记。 */
   documentLabel?: string;
   /** 左上角应用菜单栏。 */
   menu?: ReactNode;
   /** 左侧栏(文件树等);为空则不显示。 */
   sidebar?: ReactNode;
+  /** 底部状态栏(由调用方注入,带文件信息与功能入口)。 */
+  statusBar?: ReactNode;
   children: ReactNode;
 }
 
@@ -26,10 +25,10 @@ function readWidth(): number {
 // 应用外壳布局:顶部(左菜单 + 中文档名)+ 主内容区 + 底部状态栏。
 // 侧栏可拖拽改宽(localStorage 持久化);主内容区由调用方注入。
 export function WorkbenchLayout({
-  appVersion,
   documentLabel,
   menu,
   sidebar,
+  statusBar,
   children,
 }: WorkbenchLayoutProps) {
   const { t } = useTranslation();
@@ -93,7 +92,7 @@ export function WorkbenchLayout({
         ) : null}
         <main className="min-w-0 flex-1">{children}</main>
       </div>
-      <StatusBar appVersion={appVersion} />
+      {statusBar}
     </div>
   );
 }

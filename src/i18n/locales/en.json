@@ -106,6 +106,11 @@
     "emptyHint": "Open a file (Ctrl/Cmd+O), or press the command palette to begin",
     "statusReady": "Ready"
   },
+  "statusbar": {
+    "search": "Search",
+    "split": "Split",
+    "commands": "Commands"
+  },
   "file": {
     "open": "Open",
     "openFolder": "Open Folder",

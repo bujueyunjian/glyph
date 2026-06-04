@@ -1,0 +1,123 @@
+- generic:
+  - generic:
+    - generic:
+      - banner:
+        - generic:
+          - menubar:
+            - menuitem: 文件
+            - menuitem: 编辑
+            - menuitem: 视图
+            - menuitem: 帮助
+        - generic: Glyph
+      - generic:
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: 开始编辑
+                  - list:
+                    - listitem:
+                      - generic: 打开
+                      - generic: Ctrl/⌘ O
+                    - listitem:
+                      - generic: 命令面板
+                      - generic: Ctrl/⌘ ⇧ P
+                    - listitem:
+                      - generic: 快速打开
+                      - generic: Ctrl/⌘ P
+                    - listitem:
+                      - generic: 设置
+                      - generic: Ctrl/⌘ ,
+      - contentinfo:
+        - generic:
+          - generic: 就绪
+        - generic:
+          - button: 搜索
+          - button: 分屏
+          - button: 命令面板
+    - region "Notifications alt+T"
+  - dialog "命令面板" [ref=e42]:
+    - generic [ref=e43]:
+      - generic [ref=e44]: 命令面板
+      - combobox "命令面板" [expanded] [active] [ref=e45]
+      - listbox "Suggestions" [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: 文件
+          - group "文件" [ref=e49]:
+            - option "打开 Ctrl/⌘ O" [selected] [ref=e50]:
+              - generic [ref=e51]: 打开
+              - generic [ref=e52]: Ctrl/⌘ O
+            - option "打开文件夹" [ref=e53]:
+              - generic [ref=e54]: 打开文件夹
+            - option "保存 Ctrl/⌘ S" [ref=e55]:
+              - generic [ref=e56]: 保存
+              - generic [ref=e57]: Ctrl/⌘ S
+            - option "另存为 Ctrl/⌘ ⇧ S" [ref=e58]:
+              - generic [ref=e59]: 另存为
+              - generic [ref=e60]: Ctrl/⌘ ⇧ S
+            - option "全部保存 Ctrl/⌘ ⌥ S" [ref=e61]:
+              - generic [ref=e62]: 全部保存
+              - generic [ref=e63]: Ctrl/⌘ ⌥ S
+          - generic [ref=e64]: 视图
+          - group "视图" [ref=e65]:
+            - option "设置 Ctrl/⌘ ," [ref=e66]:
+              - generic [ref=e67]: 设置
+              - generic [ref=e68]: Ctrl/⌘ ,
+            - option "Markdown 预览 Ctrl/⌘ ⇧ V" [ref=e69]:
+              - generic [ref=e70]: Markdown 预览
+              - generic [ref=e71]: Ctrl/⌘ ⇧ V
+            - option "切换分屏 Ctrl/⌘ \\" [ref=e72]:
+              - generic [ref=e73]: 切换分屏
+              - generic [ref=e74]: Ctrl/⌘ \
+            - 'option "主题: Glyph Dark" [ref=e75]':
+              - generic [ref=e76]: "主题: Glyph Dark"
+            - 'option "主题: Glyph Light" [ref=e77]':
+              - generic [ref=e78]: "主题: Glyph Light"
+            - 'option "主题: Midnight" [ref=e79]':
+              - generic [ref=e80]: "主题: Midnight"
+          - generic [ref=e81]: 编辑
+          - group "编辑" [ref=e82]:
+            - option "跨文件搜索 Ctrl/⌘ ⇧ F" [ref=e83]:
+              - generic [ref=e84]: 跨文件搜索
+              - generic [ref=e85]: Ctrl/⌘ ⇧ F
+            - option "切换行注释 Ctrl/⌘ /" [ref=e86]:
+              - generic [ref=e87]: 切换行注释
+              - generic [ref=e88]: Ctrl/⌘ /
+            - option "上移行 Alt ↑" [ref=e89]:
+              - generic [ref=e90]: 上移行
+              - generic [ref=e91]: Alt ↑
+            - option "下移行 Alt ↓" [ref=e92]:
+              - generic [ref=e93]: 下移行
+              - generic [ref=e94]: Alt ↓
+            - option "复制行 Shift Alt ↓" [ref=e95]:
+              - generic [ref=e96]: 复制行
+              - generic [ref=e97]: Shift Alt ↓
+            - option "删除行 Ctrl/⌘ ⇧ K" [ref=e98]:
+              - generic [ref=e99]: 删除行
+              - generic [ref=e100]: Ctrl/⌘ ⇧ K
+          - generic [ref=e101]: AI
+          - group "AI" [ref=e102]:
+            - option "向 Agent 提问(实验)" [ref=e103]:
+              - generic [ref=e104]: 向 Agent 提问(实验)
+          - generic [ref=e105]: 编辑行
+          - group "编辑行" [ref=e106]:
+            - option "字数统计" [ref=e107]:
+              - generic [ref=e108]: 字数统计
+            - option "去除行尾空格" [ref=e109]:
+              - generic [ref=e110]: 去除行尾空格
+            - option "排序行" [ref=e111]:
+              - generic [ref=e112]: 排序行
+            - option "去重行" [ref=e113]:
+              - generic [ref=e114]: 去重行
+            - option "转为大写" [ref=e115]:
+              - generic [ref=e116]: 转为大写
+            - option "转为小写" [ref=e117]:
+              - generic [ref=e118]: 转为小写
+            - option "每行加前缀" [ref=e119]:
+              - generic [ref=e120]: 每行加前缀
+            - option "每行加后缀" [ref=e121]:
+              - generic [ref=e122]: 每行加后缀
+            - option "每行加前后缀" [ref=e123]:
+              - generic [ref=e124]: 每行加前后缀

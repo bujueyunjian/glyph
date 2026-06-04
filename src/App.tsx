@@ -29,6 +29,7 @@ import {
 } from "@/components/common/PromptDialog";
 import { EmptyState } from "@/components/workbench/EmptyState";
 import { MenuBar } from "@/components/workbench/MenuBar";
+import { StatusBar } from "@/components/workbench/StatusBar";
 import { TabBar } from "@/components/workbench/TabBar";
 import { WorkbenchLayout } from "@/components/workbench/WorkbenchLayout";
 import { useEditorTabs } from "@/hooks/useEditorTabs";
@@ -57,7 +58,12 @@ import {
 } from "@/features/markdown/mdFormat";
 import { formatJson, minifyJson } from "@/features/textops/json";
 import { countText } from "@/features/textops/textStats";
-import { getDirName, getFileExtension, joinPath } from "@/utils/path";
+import {
+  getDirName,
+  getFileExtension,
+  getFileName,
+  joinPath,
+} from "@/utils/path";
 
 // 编辑器(含 CodeMirror 核心)懒加载:空态启动时不加载,打开文件才拉取。
 const CodeEditor = lazy(() =>
@@ -1011,7 +1017,20 @@ function App() {
   return (
     <>
       <WorkbenchLayout
-        appVersion={appVersion}
+        statusBar={
+          <StatusBar
+            appVersion={appVersion}
+            fileName={
+              effectiveActive ? getFileName(effectiveActive) : undefined
+            }
+            language={
+              effectiveActive ? getFileExtension(effectiveActive) : undefined
+            }
+            onCommandPalette={() => setPaletteOpen(true)}
+            onSearch={() => setSearchOpen(true)}
+            onToggleSplit={toggleSplit}
+          />
+        }
         sidebar={
           rootPath && sidebarVisible ? (
             <FileTree
