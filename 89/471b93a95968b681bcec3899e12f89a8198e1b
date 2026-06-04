@@ -1,0 +1,30 @@
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_23b477ee1cdcb4 102-105
+src/components/command/AgentPanel.tsx
+  s_82120e9b499222::t_c565f7f4652d78 1-2,5-8,10-12,16-25,27-35,37-70,76-105
+  s_82120e9b499222::t_9ad5eea5b67c32 72-74
+src/App.tsx
+  s_82120e9b499222::t_611faf0f3cd087 28
+  s_82120e9b499222::t_23cb2cda804e98 682
+  s_82120e9b499222::t_271f71facf70d7 1269-1278
+  s_82120e9b499222::t_87a3a26a9d9ed1 173-175,180,184-185,190,196-198,201
+  s_82120e9b499222::t_f70e8aee82d0de 226,232
+src/i18n/locales/en.json
+  s_82120e9b499222::t_3c8aae99db7d16 102-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "89471b93a95968b681bcec3899e12f89a8198e1b",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
