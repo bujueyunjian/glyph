@@ -30,11 +30,14 @@ struct ManagedServer {
     pending: PendingMap,
 }
 
+// 服务器表用 Arc 包裹,使读线程能持一份克隆,在服务器退出时自清理条目。
+type ServerMap = Arc<Mutex<HashMap<u32, ManagedServer>>>;
+
 // 语言服务器注册表,挂到 Tauri State,按 id 管理多个服务器。
 #[derive(Default)]
 pub struct LspRegistry {
     next_id: Mutex<u32>,
-    servers: Mutex<HashMap<u32, ManagedServer>>,
+    servers: ServerMap,
 }
 
 // 收到的完整 LSP 消息事件载荷;serde camelCase 对齐前端。
@@ -99,6 +102,11 @@ fn build_command(program: &str, args: &[String]) -> Command {
 // 若消息是对某等待请求的响应(id 命中 pending),路由给等待者并返回 true;
 // 否则(通知 / 服务器→客户端请求 / 未匹配)返回 false 由调用方推 UI。
 fn route_response(message: &Value, pending: &Mutex<HashMap<u64, Sender<Value>>>) -> bool {
+    // 含 method 字段的是「服务器→客户端请求/通知」,即便带 id 也不是响应,
+    // 绝不按 id 误投给等待者(否则与客户端请求 id 撞号会把请求体当响应)。
+    if message.get("method").is_some() {
+        return false;
+    }
     let Some(id) = message.get("id").and_then(Value::as_u64) else {
         return false;
     };
@@ -131,6 +139,15 @@ pub fn lsp_start(
         .stdout
         .take()
         .ok_or_else(|| "无法获取服务器 stdout".to_string())?;
+
+    // 持续排空 stderr:语言服务器(rust-analyzer 等)向 stderr 写大量日志,
+    // 管道写满会阻塞服务器导致握手/请求挂死。必须在同步握手前就起排空线程。
+    if let Some(mut stderr) = child.stderr.take() {
+        std::thread::spawn(move || {
+            let _ = std::io::copy(&mut stderr, &mut std::io::sink());
+        });
+    }
+
     let mut reader = BufReader::new(stdout);
 
     // 起始必经 initialize 握手:拿到 capabilities 才算就绪。
@@ -148,6 +165,7 @@ pub fn lsp_start(
 
     let pending: PendingMap = Arc::new(Mutex::new(HashMap::new()));
     let pending_reader = Arc::clone(&pending);
+    let servers_thread = Arc::clone(&registry.servers);
 
     // 握手已消费完 initialize 响应;reader 移入线程读后续帧:
     // 命中 pending 的响应路由给等待命令,其余(诊断等通知)推 UI。
@@ -161,6 +179,12 @@ pub fn lsp_start(
             let _ = app.emit("lsp://message", LspMessage { id, message: raw });
         }
         let _ = app.emit("lsp://closed", id);
+        // 服务器退出/坏帧导致读循环结束 → 自清理:移除条目并回收子进程,
+        // 否则 servers 表残留僵死条目(后续请求空等超时)+ 子进程泄漏。
+        if let Some(mut dead) = servers_thread.lock().unwrap().remove(&id) {
+            let _ = dead.child.kill();
+            let _ = dead.child.wait();
+        }
     });
 
     registry.servers.lock().unwrap().insert(
@@ -304,7 +328,9 @@ pub fn lsp_stop(registry: State<'_, LspRegistry>, id: u32) -> Result<(), String>
     server
         .child
         .kill()
-        .map_err(|e| format!("终止服务器 {id} 失败: {e}"))
+        .map_err(|e| format!("终止服务器 {id} 失败: {e}"))?;
+    let _ = server.child.wait(); // 回收子进程,避免 Unix 僵尸(defunct)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -392,6 +418,23 @@ mod tests {
         // id 无等待者(如服务器→客户端请求)→ 不路由。
         let server_req = json!({ "jsonrpc": "2.0", "id": 99, "method": "workspace/configuration" });
         assert!(!route_response(&server_req, &pending));
+    }
+
+    #[test]
+    fn server_request_with_matching_id_is_not_mistaken_for_response() {
+        // 服务器→客户端请求的 id 可能与客户端 pending 请求 id 撞号;含 method 即非响应,
+        // 绝不能被当作响应消费掉等待者(否则等待者拿到垃圾、真正的请求被吞)。
+        let pending = Mutex::new(HashMap::new());
+        let (tx, rx) = channel::<Value>();
+        pending.lock().unwrap().insert(1, tx);
+
+        let server_req = json!({ "jsonrpc": "2.0", "id": 1, "method": "workspace/configuration" });
+        assert!(!route_response(&server_req, &pending));
+        assert!(
+            pending.lock().unwrap().contains_key(&1),
+            "等待者不应被误消费"
+        );
+        assert!(rx.try_recv().is_err(), "等待者不应收到服务器请求");
     }
 
     // 端到端握手:对真实 rust-analyzer 验证 spawn + 帧 + initialize 全栈。
