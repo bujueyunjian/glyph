@@ -1,0 +1,34 @@
+src/i18n/locales/zh-CN.json
+  s_82120e9b499222::t_9635e6eb052aab 115-116
+src/features/lsp/protocol.ts
+  s_82120e9b499222::t_53e7e073cec2a3 89-120
+src/App.tsx
+  s_82120e9b499222::t_67906e123fdc6b 70-71
+  s_82120e9b499222::t_04ac3584108e8b 973-974
+  s_82120e9b499222::t_42b2cb6af9c1b0 472-475
+  s_82120e9b499222::t_95e17b78c10e74 464-471,476-483
+  s_82120e9b499222::t_4c01d060964d28 696-706
+  s_82120e9b499222::t_f57078e333879a 884-885
+  s_82120e9b499222::t_0002eb6c7b3a72 908-913
+src/i18n/locales/en.json
+  s_82120e9b499222::t_0212c4c24a0e2d 115-116
+src/features/lsp/protocol.test.ts
+  s_82120e9b499222::t_40baa5a0b9b9e0 5
+  s_82120e9b499222::t_765a4a8cace0aa 103-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b437a64914f5f29070c31ce3335e0454cf4bf501",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
