@@ -1,0 +1,27 @@
+docs/progress/tasks/0041-visible-brand-os-lsp.md
+  s_82120e9b499222::t_5f80ce316d211d 1-18
+src-tauri/Cargo.toml
+  ai_agent 3
+package.json
+  ai_agent 4
+src-tauri/tauri.conf.json
+  ai_agent 4
+src-tauri/Cargo.lock
+  ai_agent 1405
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "585b4a518944fb7e92264f0d9c2f5ae3479743f0",
+  "prompts": {},
+  "sessions": {
+    "s_82120e9b499222": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08c198cd-55ca-442e-a64c-d13125e6884e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
