@@ -1,6 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Send, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+
+export interface AgentPanelMessage {
+  id: number;
+  role: "user" | "assistant";
+  text: string;
+  state?: "streaming" | "done" | "error";
+}
 
 interface AgentPanelProps {
   agentCmd: string;
@@ -12,8 +19,8 @@ interface AgentPanelProps {
   mcpError: string | null;
   /** 已配置的 MCP server 数量(标题计数)。 */
   mcpCount: number;
-  /** 流式响应文本(null = 尚无;"" = 已开始,等待分块)。 */
-  result: string | null;
+  /** 当前对话消息。用户消息立即展示,assistant 消息按流式分块追加。 */
+  messages: AgentPanelMessage[];
   /** 是否有进行中的会话(展示加载态/禁用发送)。 */
   busy: boolean;
   onSend: (prompt: string) => void;
@@ -29,13 +36,14 @@ export function AgentPanel({
   onMcpServersTextChange,
   mcpError,
   mcpCount,
-  result,
+  messages,
   busy,
   onSend,
   onClose,
 }: AgentPanelProps) {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const send = () => {
     const text = prompt.trim();
@@ -43,6 +51,12 @@ export function AgentPanel({
     onSend(text);
     setPrompt("");
   };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, busy]);
 
   return (
     <div className="flex h-full w-[360px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -95,18 +109,50 @@ export function AgentPanel({
         </details>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
-        {result === null ? (
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto px-3 py-2">
+        {messages.length === 0 ? (
           <p className="text-xs text-[var(--color-subtle)]">
             {t("agent.panelHint")}
           </p>
         ) : (
-          <pre className="font-mono text-xs whitespace-pre-wrap text-[var(--color-text)]">
-            {result}
-            {busy ? (
-              <span className="text-[var(--color-subtle)]"> ▍</span>
-            ) : null}
-          </pre>
+          <div className="space-y-3">
+            {messages.map((message) => {
+              const isAssistant = message.role === "assistant";
+              const isStreaming = message.state === "streaming";
+              const displayText =
+                message.text ||
+                (isAssistant && isStreaming
+                  ? t("agent.thinking")
+                  : isAssistant
+                    ? t("agent.emptyResponse")
+                    : "");
+              return (
+                <article key={message.id} className="space-y-1">
+                  <div className="text-[11px] font-medium text-[var(--color-muted)]">
+                    {isAssistant
+                      ? t("agent.assistantRole")
+                      : t("agent.userRole")}
+                  </div>
+                  <pre
+                    className={[
+                      "rounded px-3 py-2 font-mono text-xs whitespace-pre-wrap",
+                      isAssistant
+                        ? "bg-[var(--color-bg)] text-[var(--color-text)]"
+                        : "bg-[var(--color-overlay)] text-[var(--color-text)]",
+                      message.state === "error"
+                        ? "border border-red-400/60"
+                        : "border border-transparent",
+                    ].join(" ")}
+                  >
+                    {displayText}
+                    {isAssistant && isStreaming ? (
+                      <span className="text-[var(--color-subtle)]"> ▍</span>
+                    ) : null}
+                  </pre>
+                </article>
+              );
+            })}
+          </div>
         )}
       </div>
 

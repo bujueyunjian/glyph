@@ -26,7 +26,10 @@ import { parseMcpServers } from "@/features/agent/mcpConfig";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { QuickOpen } from "@/components/command/QuickOpen";
 import { SearchPanel } from "@/components/command/SearchPanel";
-import { AgentPanel } from "@/components/command/AgentPanel";
+import {
+  AgentPanel,
+  type AgentPanelMessage,
+} from "@/components/command/AgentPanel";
 import { OutlinePanel } from "@/components/command/OutlinePanel";
 import { EditorContextMenu } from "@/components/editor/EditorContextMenu";
 import { FileTree } from "@/components/explorer/FileTree";
@@ -188,17 +191,26 @@ function App() {
   const [outlineSyms, setOutlineSyms] = useState<OutlineSymbol[]>([]);
   const [outlineLoading, setOutlineLoading] = useState(false);
   const [treeVersion, setTreeVersion] = useState(0);
-  // Markdown 预览默认开(只对 .md 文件渲染),持久化:打开 md 即见渲染图,不必每次手动开预览。
-  const [previewOpen, setPreviewOpen] = useState(() => {
+  // Markdown 默认显示可编辑 Live Preview;源码模式按用户需要从菜单打开并持久化。
+  const [markdownSourceVisible, setMarkdownSourceVisible] = useState(() => {
     try {
-      return localStorage.getItem("glyph.mdPreviewOpen") !== "0";
+      return localStorage.getItem("glyph.mdSourceVisible") === "1";
     } catch {
-      return true;
+      return false;
     }
   });
+  const [markdownRenderPreviewOpen, setMarkdownRenderPreviewOpen] = useState(
+    () => {
+      try {
+        return localStorage.getItem("glyph.mdRenderPreviewOpen") === "1";
+      } catch {
+        return false;
+      }
+    },
+  );
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
-  const [agentResult, setAgentResult] = useState<string | null>(null);
+  const [agentMessages, setAgentMessages] = useState<AgentPanelMessage[]>([]);
   const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentCmd, setAgentCmd] = useState("claude-code-acp");
@@ -224,12 +236,25 @@ function App() {
   // 当前流式会话的 turn id(前端分配);事件按它过滤,杜绝旧会话残留串扰。
   const agentTurnRef = useRef<number | null>(null);
   const agentTurnCounter = useRef(0);
+  const agentMessageCounter = useRef(0);
+  const agentAssistantMessageRef = useRef<number | null>(null);
 
   const closeAgentPanel = useCallback(() => {
     const turn = agentTurnRef.current;
+    const assistantMessageId = agentAssistantMessageRef.current;
     if (turn !== null) void agentCancel(turn); // 终止后台子进程,不留孤儿
     agentTurnRef.current = null;
+    agentAssistantMessageRef.current = null;
     setAgentBusy(false);
+    if (assistantMessageId !== null) {
+      setAgentMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === assistantMessageId
+            ? { ...message, state: "done" }
+            : message,
+        ),
+      );
+    }
     setAgentPanelOpen(false);
   }, []);
 
@@ -258,9 +283,22 @@ function App() {
         const prev = agentTurnRef.current;
         if (prev !== null) void agentCancel(prev);
         const turn = agentTurnCounter.current + 1;
+        const userMessageId = agentMessageCounter.current + 1;
+        const assistantMessageId = userMessageId + 1;
         agentTurnCounter.current = turn;
+        agentMessageCounter.current = assistantMessageId;
         agentTurnRef.current = turn; // 先于发起设置,事件抵达即可匹配(无竞态丢块)
-        setAgentResult(""); // 清空,等待流式分块
+        agentAssistantMessageRef.current = assistantMessageId;
+        setAgentMessages((prevMessages) => [
+          ...prevMessages,
+          { id: userMessageId, role: "user", text: prompt },
+          {
+            id: assistantMessageId,
+            role: "assistant",
+            text: "",
+            state: "streaming",
+          },
+        ]);
         setAgentBusy(true);
         // cwd 传打开的工作区根:把 agent 默认作用域钉到用户打开的工程(数据安全,ADR-0009)。
         // mcpServers 转发给 agent 由其连接(ADR-0010)。
@@ -273,7 +311,15 @@ function App() {
         ).catch((err) => {
           if (agentTurnRef.current !== turn) return; // 已被取消/新会话取代
           agentTurnRef.current = null;
+          agentAssistantMessageRef.current = null;
           setAgentBusy(false);
+          setAgentMessages((prevMessages) =>
+            prevMessages.map((message) =>
+              message.id === assistantMessageId
+                ? { ...message, state: "error" }
+                : message,
+            ),
+          );
           toast.error(t("agent.failed", { msg: (err as Error).message }));
         });
       })();
@@ -292,20 +338,52 @@ function App() {
         const subs = await Promise.all([
           listen<{ turnId: number; text: string }>("agent://chunk", (e) => {
             if (e.payload.turnId !== agentTurnRef.current) return;
-            setAgentResult((prevText) =>
-              prevText === null ? null : prevText + e.payload.text,
+            const assistantMessageId = agentAssistantMessageRef.current;
+            if (assistantMessageId === null) return;
+            setAgentMessages((prevMessages) =>
+              prevMessages.map((message) =>
+                message.id === assistantMessageId
+                  ? {
+                      ...message,
+                      text: message.text + e.payload.text,
+                      state: "streaming",
+                    }
+                  : message,
+              ),
             );
           }),
           listen<{ turnId: number }>("agent://done", (e) => {
             if (e.payload.turnId === agentTurnRef.current) {
+              const assistantMessageId = agentAssistantMessageRef.current;
               agentTurnRef.current = null;
+              agentAssistantMessageRef.current = null;
               setAgentBusy(false);
+              if (assistantMessageId !== null) {
+                setAgentMessages((prevMessages) =>
+                  prevMessages.map((message) =>
+                    message.id === assistantMessageId
+                      ? { ...message, state: "done" }
+                      : message,
+                  ),
+                );
+              }
             }
           }),
           listen<{ turnId: number; message: string }>("agent://error", (e) => {
             if (e.payload.turnId !== agentTurnRef.current) return;
+            const assistantMessageId = agentAssistantMessageRef.current;
             agentTurnRef.current = null;
+            agentAssistantMessageRef.current = null;
             setAgentBusy(false); // 保留已流式的部分,仅 toast 报错
+            if (assistantMessageId !== null) {
+              setAgentMessages((prevMessages) =>
+                prevMessages.map((message) =>
+                  message.id === assistantMessageId
+                    ? { ...message, state: "error" }
+                    : message,
+                ),
+              );
+            }
             toast.error(t("agent.failed", { msg: e.payload.message }));
           }),
         ]);
@@ -818,7 +896,11 @@ function App() {
     (path: string, pane: "main" | "split") => {
       lastEditedPaneRef.current.set(path, pane); // 记录最近编辑面板,保存取对实例
       markDirty(path);
-      if (previewOpen && path === activePath) {
+      if (
+        markdownRenderPreviewOpen &&
+        path === activePath &&
+        ["md", "markdown"].includes(getFileExtension(path))
+      ) {
         window.clearTimeout(previewTimerRef.current);
         previewTimerRef.current = window.setTimeout(
           () => setPreviewContent(getContent(path)),
@@ -826,7 +908,7 @@ function App() {
         );
       }
     },
-    [markDirty, previewOpen, activePath, getContent],
+    [markDirty, markdownRenderPreviewOpen, activePath, getContent],
   );
 
   const activeIsMarkdown =
@@ -838,11 +920,17 @@ function App() {
   const effectiveIsJson =
     !!effectiveActive &&
     ["json", "jsonc"].includes(getFileExtension(effectiveActive));
+  const markdownEditableSettings = useMemo(
+    () =>
+      markdownSourceVisible
+        ? { ...settings, markdownLivePreview: false }
+        : { ...settings, markdownLivePreview: true },
+    [settings, markdownSourceVisible],
+  );
 
-  // 预览开启或切换文件时,立即刷新预览。编辑器实例尚未挂载(懒加载)时回退到标签 initialContent,
-  // 避免「自动预览」在文件刚打开、CM 未就绪时闪空。
+  // Markdown 渲染预览打开/切换文件时立即刷新。编辑器实例尚未挂载时回退到标签 initialContent。
   useEffect(() => {
-    if (!previewOpen || !activePath) return;
+    if (!activeIsMarkdown || !activePath || !markdownRenderPreviewOpen) return;
     const view =
       editorRefs.current.get(activePath)?.view ??
       splitRefs.current.get(activePath)?.view;
@@ -850,16 +938,37 @@ function App() {
     setPreviewContent(
       view ? getContent(activePath) : (tab?.initialContent ?? ""),
     );
-  }, [previewOpen, activePath, getContent, tabs]);
+  }, [
+    activeIsMarkdown,
+    markdownRenderPreviewOpen,
+    activePath,
+    getContent,
+    tabs,
+  ]);
 
-  // 持久化预览开关:用户的开/关偏好跨会话保留(默认开)。
+  // 持久化 Markdown 源码面板:默认关闭,让 .md 打开即是渲染视图。
   useEffect(() => {
     try {
-      localStorage.setItem("glyph.mdPreviewOpen", previewOpen ? "1" : "0");
+      localStorage.setItem(
+        "glyph.mdSourceVisible",
+        markdownSourceVisible ? "1" : "0",
+      );
     } catch {
       // 持久化失败不致命
     }
-  }, [previewOpen]);
+  }, [markdownSourceVisible]);
+
+  // 静态渲染预览只是辅助视图(如 Mermaid 图),默认关闭,不替代可编辑 Live Preview。
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "glyph.mdRenderPreviewOpen",
+        markdownRenderPreviewOpen ? "1" : "0",
+      );
+    } catch {
+      // 持久化失败不致命
+    }
+  }, [markdownRenderPreviewOpen]);
 
   // 文件树增删改:弹输入/确认 → 调命令 → 刷新(treeVersion 变更使 FileTree 重挂载重列)。
   const treeActions = useMemo<FileTreeActions>(
@@ -1005,13 +1114,27 @@ function App() {
         shortcut: "Ctrl/⌘ ⇧ F",
         perform: openSearch,
       },
-      {
-        id: "markdown.preview",
-        title: t("preview.title"),
-        group: t("menu.view"),
-        shortcut: "Ctrl/⌘ ⇧ V",
-        perform: () => setPreviewOpen((prev) => !prev),
-      },
+      ...(activeIsMarkdown
+        ? [
+            {
+              id: "markdown.source",
+              title: markdownSourceVisible
+                ? t("view.hideMarkdownSource")
+                : t("view.showMarkdownSource"),
+              group: t("menu.view"),
+              shortcut: "Ctrl/⌘ ⇧ V",
+              perform: () => setMarkdownSourceVisible((prev) => !prev),
+            },
+            {
+              id: "markdown.renderPreview",
+              title: markdownRenderPreviewOpen
+                ? t("preview.close")
+                : t("preview.title"),
+              group: t("menu.view"),
+              perform: () => setMarkdownRenderPreviewOpen((prev) => !prev),
+            },
+          ]
+        : []),
       {
         id: "view.split",
         title: t("view.split"),
@@ -1278,8 +1401,11 @@ function App() {
       setTheme,
       transformLines,
       toggleSplit,
+      activeIsMarkdown,
       effectiveIsMarkdown,
       effectiveIsJson,
+      markdownSourceVisible,
+      markdownRenderPreviewOpen,
       formatInline,
       runLineCommand,
       showWordCount,
@@ -1334,7 +1460,7 @@ function App() {
         setSearchOpen((prev) => !prev);
       } else if (event.shiftKey && key === "v") {
         event.preventDefault();
-        setPreviewOpen((prev) => !prev);
+        if (activeIsMarkdown) setMarkdownSourceVisible((prev) => !prev);
       } else if (event.shiftKey && key === "o") {
         event.preventDefault();
         setOutlineOpen((prev) => !prev);
@@ -1390,6 +1516,7 @@ function App() {
     lspStatus.serverId,
     goToDefinition,
     doFindReferences,
+    activeIsMarkdown,
   ]);
 
   // 会话恢复:启动时一次,打开上次会话的文件(缺=空态;坏 JSON 已在 loadSession 响亮报错)。
@@ -1569,6 +1696,11 @@ function App() {
             sidebarVisible={sidebarVisible}
             onToggleSidebar={() => setSidebarVisible((prev) => !prev)}
             onToggleSplit={toggleSplit}
+            canToggleMarkdownSource={activeIsMarkdown}
+            markdownSourceVisible={markdownSourceVisible}
+            onToggleMarkdownSource={() =>
+              setMarkdownSourceVisible((prev) => !prev)
+            }
             onToggleOutline={() => setOutlineOpen((prev) => !prev)}
             onCommandPalette={() => setPaletteOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
@@ -1627,7 +1759,13 @@ function App() {
                           initialCursor={restoredCursorsRef.current[tab.path]}
                           extension={getFileExtension(tab.path)}
                           themeKind={activeTheme.kind}
-                          settings={settings}
+                          settings={
+                            ["md", "markdown"].includes(
+                              getFileExtension(tab.path),
+                            )
+                              ? markdownEditableSettings
+                              : settings
+                          }
                           lsp={
                             focusedPane === "main" &&
                             tab.path === effectiveActive
@@ -1675,7 +1813,11 @@ function App() {
                       }
                       extension={getFileExtension(splitPath)}
                       themeKind={activeTheme.kind}
-                      settings={settings}
+                      settings={
+                        ["md", "markdown"].includes(getFileExtension(splitPath))
+                          ? markdownEditableSettings
+                          : settings
+                      }
                       lsp={focusedPane === "split" ? lspCtx : undefined}
                       onDocChange={() => handleDocChange(splitPath, "split")}
                     />
@@ -1683,8 +1825,13 @@ function App() {
                 </div>
               </EditorContextMenu>
             ) : null}
-            {previewOpen && activeIsMarkdown ? (
-              <div className="min-w-0 flex-1 border-l border-[var(--color-border)]">
+            {activeIsMarkdown && markdownRenderPreviewOpen ? (
+              <div
+                className={[
+                  "min-w-0 flex-1",
+                  "border-l border-[var(--color-border)]",
+                ].join(" ")}
+              >
                 <Suspense fallback={<div className="h-full w-full" />}>
                   <MarkdownPreview
                     content={previewContent}
@@ -1701,7 +1848,7 @@ function App() {
                 onMcpServersTextChange={setMcpServersText}
                 mcpError={mcpParsed.error}
                 mcpCount={mcpParsed.servers.length}
-                result={agentResult}
+                messages={agentMessages}
                 busy={agentBusy}
                 onSend={(prompt) => askAgent(agentCmd, prompt)}
                 onClose={closeAgentPanel}

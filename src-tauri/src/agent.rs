@@ -171,6 +171,29 @@ fn kill(child: &mut Child) {
     let _ = child.wait();
 }
 
+#[cfg(windows)]
+fn has_windows_command_extension(program: &str) -> bool {
+    let lower = program.to_ascii_lowercase();
+    lower.ends_with(".exe")
+        || lower.ends_with(".cmd")
+        || lower.ends_with(".bat")
+        || lower.ends_with(".com")
+}
+
+// Windows 的 npm 全局 bin 通常是 .cmd shim;std::process::Command 不会像 shell 一样解析 PATHEXT。
+#[cfg(windows)]
+fn spawn_program_candidates(program: &str) -> Vec<String> {
+    if has_windows_command_extension(program) {
+        return vec![program.to_string()];
+    }
+    vec![program.to_string(), format!("{program}.cmd")]
+}
+
+#[cfg(not(windows))]
+fn spawn_program_candidates(program: &str) -> Vec<String> {
+    vec![program.to_string()]
+}
+
 // 按用户配置的命令启动 ACP agent 子进程(stdio 全管道)。命令按空白拆 program + args,
 // 故 "claude-code-acp" 与 "npx -y @zed-industries/claude-code-acp" 都支持。
 // 命令不存在(ENOENT)时给可执行的指引:Glyph 不内置 agent,需自备适配器。
@@ -182,26 +205,28 @@ fn spawn_agent(agent_cmd: &str) -> Result<Child, String> {
         .to_string();
     let args: Vec<String> = parts.map(str::to_string).collect();
 
-    let mut command = Command::new(&program);
-    command
-        .args(&args)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    #[cfg(windows)]
-    command.creation_flags(CREATE_NO_WINDOW);
+    for candidate in spawn_program_candidates(&program) {
+        let mut command = Command::new(&candidate);
+        command
+            .args(&args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        #[cfg(windows)]
+        command.creation_flags(CREATE_NO_WINDOW);
 
-    command.spawn().map_err(|e| {
-        if e.kind() == std::io::ErrorKind::NotFound {
-            format!(
-                "未找到 agent 命令「{program}」。Glyph 不内置 AI agent,需自备 ACP 适配器:\
-                 例如 npm i -g @zed-industries/claude-code-acp(它提供 claude-code-acp 命令),\
-                 装好后在 AI 面板填入该命令。"
-            )
-        } else {
-            format!("启动 agent 失败 ({program}): {e}")
+        match command.spawn() {
+            Ok(child) => return Ok(child),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(format!("启动 agent 失败 ({program}): {e}")),
         }
-    })
+    }
+
+    Err(format!(
+        "未找到 agent 命令「{program}」。Glyph 不内置 AI agent,需自备 ACP 适配器:\
+         例如 npm i -g @zed-industries/claude-code-acp(它提供 claude-code-acp 命令),\
+         装好后重启 Glyph 并在 AI 面板填入该命令。"
+    ))
 }
 
 // 一次性向 ACP agent 发 prompt 取完整文本响应。agent_cmd 如 "claude-code-acp"(用户已装的适配器)。
@@ -413,7 +438,7 @@ pub fn agent_cancel(registry: State<'_, AgentRegistry>, turn_id: u64) {
 mod tests {
     use super::{
         client_init_params, deny_reply, extract_agent_text, resolve_cwd, response_for, rpc_request,
-        session_new_params,
+        session_new_params, spawn_program_candidates,
     };
     use serde_json::{json, Value};
 
@@ -438,6 +463,23 @@ mod tests {
         assert!(!resolve_cwd(None).is_empty());
         assert!(!resolve_cwd(Some("   ".to_string())).is_empty());
         assert_ne!(resolve_cwd(Some("  ".to_string())), "  ");
+    }
+
+    // Windows npm 全局命令是 .cmd shim;无扩展命令需显式尝试 .cmd。
+    #[cfg(windows)]
+    #[test]
+    fn windows_adds_cmd_candidate_for_npm_agent_shim() {
+        assert_eq!(
+            spawn_program_candidates("claude-code-acp"),
+            vec![
+                "claude-code-acp".to_string(),
+                "claude-code-acp.cmd".to_string()
+            ]
+        );
+        assert_eq!(
+            spawn_program_candidates("claude-code-acp.cmd"),
+            vec!["claude-code-acp.cmd".to_string()]
+        );
     }
 
     // 安全边界回归守卫:Glyph 绝不向 agent 授予 fs/terminal 能力(改 true 即测试失败)。

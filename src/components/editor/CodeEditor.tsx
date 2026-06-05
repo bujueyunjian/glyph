@@ -9,7 +9,6 @@ import { search, searchKeymap } from "@codemirror/search";
 import type { ThemeKind } from "@/theme/themes";
 import type { EditorSettings } from "@/types/settingsTypes";
 import { loadLanguageExtension } from "./languageRegistry";
-import { markdownConceal } from "./markdownDecorations";
 import {
   lspEditorExtensions,
   type LspEditorContext,
@@ -51,6 +50,9 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
     ref,
   ) {
     const [languageExt, setLanguageExt] = useState<Extension[]>([]);
+    const [markdownConcealExt, setMarkdownConcealExt] =
+      useState<Extension | null>(null);
+    const isMarkdownExtension = extension === "md" || extension === "markdown";
 
     // 视图创建时应用恢复的光标并滚动入视(仅一次;越界则钳到文末)。
     const handleCreateEditor = useCallback(
@@ -72,6 +74,20 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
       };
     }, [extension]);
 
+    useEffect(() => {
+      if (!isMarkdownExtension) {
+        setMarkdownConcealExt(null);
+        return;
+      }
+      let active = true;
+      void import("./markdownDecorations").then(({ markdownConceal }) => {
+        if (active) setMarkdownConcealExt(markdownConceal);
+      });
+      return () => {
+        active = false;
+      };
+    }, [isMarkdownExtension]);
+
     // 设置实时驱动:字号/连字、Tab 宽度、缩进(空格 vs Tab)、自动换行。
     const extensions = useMemo(() => {
       const appearance = EditorView.theme({
@@ -86,7 +102,6 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
       const indent = settings.insertSpaces
         ? " ".repeat(settings.tabSize)
         : "\t";
-      const isMarkdown = extension === "md" || extension === "markdown";
       return [
         appearance,
         EditorState.tabSize.of(settings.tabSize),
@@ -96,13 +111,15 @@ export const CodeEditor = forwardRef<ReactCodeMirrorRef, CodeEditorProps>(
         keymap.of(searchKeymap),
         ...languageExt,
         // Markdown Live Preview:隐藏非光标行的语法标记(仅 md + 设置开启)。
-        ...(isMarkdown && settings.markdownLivePreview
-          ? [markdownConceal]
+        ...(isMarkdownExtension &&
+        settings.markdownLivePreview &&
+        markdownConcealExt
+          ? [markdownConcealExt]
           : []),
         // 语言服务器:补全 + 诊断 + didOpen/didChange(lsp 上下文就绪时)。
         ...(lsp ? [lspEditorExtensions(lsp)] : []),
       ];
-    }, [languageExt, settings, extension, lsp]);
+    }, [languageExt, settings, lsp, isMarkdownExtension, markdownConcealExt]);
 
     // 行号开关走 basicSetup(与默认项合并,其余特性不变)。
     const basicSetup = useMemo(

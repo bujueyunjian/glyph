@@ -54,7 +54,9 @@
   "view": {
     "showSidebar": "Show Sidebar",
     "hideSidebar": "Hide Sidebar",
-    "split": "Toggle Split"
+    "split": "Toggle Split",
+    "showMarkdownSource": "Show Markdown Source",
+    "hideMarkdownSource": "Hide Markdown Source"
   },
   "help": {
     "about": "About Glyph"
@@ -83,7 +85,8 @@
     "failed": "Search failed: {{msg}}"
   },
   "preview": {
-    "title": "Markdown Preview"
+    "title": "Markdown Preview",
+    "close": "Close Markdown Preview"
   },
   "outline": {
     "title": "Outline",
@@ -114,6 +117,10 @@
     "resultTitle": "Agent response",
     "panelTitle": "AI Agent",
     "panelHint": "Type a prompt below. Glyph bundles no model/key — it just forwards your prompt locally to your installed ACP adapter (e.g. claude-code-acp; install: npm i -g @zed-industries/claude-code-acp).",
+    "userRole": "You",
+    "assistantRole": "Agent",
+    "thinking": "Agent is thinking...",
+    "emptyResponse": "(No response text)",
     "consentTitle": "Run AI agent?",
     "consentBody": "Your prompt and any project content the agent reads will be sent to your configured agent and its model provider. Glyph only forwards locally — it never stores or uploads your data. Continue only if you trust this agent.",
     "mcpLabel": "MCP servers ({{n}})",

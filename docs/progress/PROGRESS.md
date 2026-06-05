@@ -3,7 +3,7 @@
 > **每次开工先读这里。** 这是项目的当前状态与方向的权威快照。
 > 方向细节见 [`../roadmap/roadmap.md`](../roadmap/roadmap.md)；每个任务的前/后文档见 [`tasks/`](tasks/)。
 
-- 最后更新：2026-06-04（M0–M4 主体 ✅ + **LSP 核心 ✅(补全/诊断/悬停/转到定义/格式化/重命名/符号/**查找引用**,对真实 rust-analyzer e2e)** + **编辑器右键上下文菜单**(命令归位:状态栏回归纯状态、命令进右键/菜单栏)+ **Agent 数据安全**(首用知情同意 + 能力否决边界 + 回归测试,[ADR-0009](../adr/0009-agent-data-security.md))+ agent 未装的可执行报错 + **MCP 客户端(走 ACP 转发,零依赖)**;**已发 v0.0.13**(新建文件 + MD 自动预览 + Mermaid 图 + agent 默认命令修正);pantheon 路线图 A/B(UI)/C/D 完成,E 待证书)
+- 最后更新：2026-06-05（M0–M4 主体 ✅ + **LSP 核心 ✅(补全/诊断/悬停/转到定义/格式化/重命名/符号/**查找引用**,对真实 rust-analyzer e2e)** + **编辑器右键上下文菜单**(命令归位:状态栏回归纯状态、命令进右键/菜单栏)+ **Agent 数据安全**(首用知情同意 + 能力否决边界 + 回归测试,[ADR-0009](../adr/0009-agent-data-security.md))+ agent 未装的可执行报错 + **MCP 客户端(走 ACP 转发,零依赖)**;**已发 v0.0.13**(新建文件 + MD 自动预览 + Mermaid 图 + agent 默认命令修正);**Agent 侧栏 transcript + Windows npm `.cmd` 解析已修**;**Markdown 可编辑 Live Preview + 任务/图片小组件已补**;pantheon 路线图 A/B(UI)/C/D 完成,E 待证书)
 - ⚙️ **发版节奏(用户定)**:不逐功能发版,功能累积到 main 批量提交、统一构建,里程碑或用户指示才打 tag 出包。
 - 当前里程碑：**可日用成形 + 三角支柱全部见形**。①轻快美:首屏 <140KB/体积门禁/键入延迟门禁;②写作级 MD:渲染/预览/格式化 + 行内 Live Preview(光标感知隐藏标记,Playwright 验);③Agent 宿主:一次性+流式 + AI 侧栏(接 ACP 适配器)。LSP table-stakes 核心齐。剩余硬卡:E 签名(证书)+ agent/LSP 的真机运行验证。
 - 一句话定位：公司能免费铺给 500 名开发者、无需授权、无需法务审查的跨平台代码编辑器——又快、又轻、又美，任何 AI agent 都能插进来。
@@ -79,6 +79,9 @@
 - ✅ [0047] **Markdown 标题大纲**(支柱②):大纲面板对 Markdown 走纯前端 `markdownHeadings`(跳过围栏代码块)解析标题,**无需 LSP** 即可用 + 3 单测;`canResolve` 区分 MD/LSP 空态
 - ✅ [0048] **Markdown 任务列表**(支柱②):`toggleTaskList`(`- [ ] ` 切换,含已勾选去除)+ 2 单测,命令面板 mdfmt 组
 - ✅ [0050] **新建文件**(`Ctrl/⌘+N` 无标题缓冲)· **Markdown 预览顺手化**(对 .md 默认开渲染预览 + 持久化)· **Mermaid 图渲染**(```mermaid→图,按需动态载入不进首屏,strict+SVG 二次消毒,[ADR-0002 Addendum](../adr/0002-markdown-live-preview.md))· **修正 agent 默认命令为 `claude-code-acp`**(真机+registry 核实,纠正误信 GitHub HEAD)
+- ✅ [0051] **Agent 侧栏 transcript + Windows 命令解析**:用户提问立即显示,assistant 等待气泡按 `agent://chunk` 追加;Windows 下 `claude-code-acp` 会显式尝试 npm 生成的 `.cmd` shim,避免已安装却 NotFound。
+- ✅ [0052] **Markdown 可编辑 Live Preview 默认视图**:.md 默认显示可编辑 Live Preview,源码模式通过「视图 → 显示/隐藏 Markdown 源码」或 `Ctrl/⌘⇧V` 切换;静态 Markdown 预览仅作可选辅助面板。
+- ✅ [0053] **Markdown Live Preview 小组件**:任务列表 `[ ]/[x]` 渲染为可点击 checkbox 并回写 Markdown;非光标行图片语法渲染为图片卡片,光标进入该行恢复源码可编辑。
 - ✅ [ADR-0010 + 0049] **MCP 客户端(护城河③)**:走 ACP 转发,**零新依赖、守轻**(部分取代 0008 的 rmcp)。`session_new_params` 把用户配置的 MCP server 转发进 `session/new` 由 agent 连接(Rust 单测);AgentPanel 内 JSON 配置区(`parseMcpServers` 解析 + 3 单测,坏配置响亮报错/拒发,localStorage 持久化);Playwright 验空/错/有三态。差异化三角③ 至此:流式对话 + 安全边界 + cwd 收敛 + **MCP**
 - ✅ 发布 v0.0.2 → **v0.0.11**(逐版 4 平台 CI 绿;后续改批量发版)
 

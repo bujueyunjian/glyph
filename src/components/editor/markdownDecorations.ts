@@ -5,6 +5,7 @@ import {
   EditorView,
   ViewPlugin,
   type ViewUpdate,
+  WidgetType,
 } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 
@@ -104,6 +105,101 @@ const CONCEAL_NODES = new Set([
 
 const CONCEAL = Decoration.replace({});
 
+class TaskCheckboxWidget extends WidgetType {
+  constructor(
+    private readonly from: number,
+    private readonly to: number,
+    private readonly checked: boolean,
+  ) {
+    super();
+  }
+
+  eq(other: TaskCheckboxWidget) {
+    return (
+      this.from === other.from &&
+      this.to === other.to &&
+      this.checked === other.checked
+    );
+  }
+
+  toDOM(view: EditorView) {
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "cm-md-task-checkbox";
+    input.checked = this.checked;
+    input.ariaLabel = this.checked
+      ? "Mark task as incomplete"
+      : "Mark task as complete";
+    input.addEventListener("change", () => {
+      view.dispatch({
+        changes: {
+          from: this.from,
+          to: this.to,
+          insert: this.checked ? "[ ]" : "[x]",
+        },
+      });
+    });
+    return input;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+interface MarkdownImage {
+  alt: string;
+  url: string;
+}
+
+export function parseMarkdownImage(source: string): MarkdownImage | null {
+  const match = /^!\[([^\]]*)\]\((.*)\)$/.exec(source.trim());
+  if (!match) return null;
+  const url = match[2].trim().replace(/^<|>$/g, "");
+  if (!url) return null;
+  return { alt: match[1], url };
+}
+
+function canPreviewImageUrl(url: string): boolean {
+  return /^(https?:|data:image\/|blob:)/i.test(url);
+}
+
+class ImagePreviewWidget extends WidgetType {
+  constructor(private readonly image: MarkdownImage) {
+    super();
+  }
+
+  eq(other: ImagePreviewWidget) {
+    return (
+      this.image.alt === other.image.alt && this.image.url === other.image.url
+    );
+  }
+
+  toDOM() {
+    const card = document.createElement("span");
+    card.className = "cm-md-image-card";
+
+    if (canPreviewImageUrl(this.image.url)) {
+      const img = document.createElement("img");
+      img.className = "cm-md-image";
+      img.src = this.image.url;
+      img.alt = this.image.alt;
+      card.appendChild(img);
+    } else {
+      const placeholder = document.createElement("span");
+      placeholder.className = "cm-md-image-placeholder";
+      placeholder.textContent = "Image";
+      card.appendChild(placeholder);
+    }
+
+    const caption = document.createElement("span");
+    caption.className = "cm-md-image-caption";
+    caption.textContent = this.image.alt || this.image.url;
+    card.appendChild(caption);
+    return card;
+  }
+}
+
 // 收集"光标/选区所在、且落在可见区内"的行号——这些行显示原始标记,不隐藏。
 // 关键:与 ranges(可见区)求交,只物化视口内的行 → O(viewport),不因大选区/全选退化成 O(doc)。
 export function selectionLines(
@@ -139,6 +235,33 @@ export function buildConcealDecorations(
       enter: (node) => {
         // 跨段边界节点只在起点所在段处理,避免相邻两段各推一条重复 replace。
         if (node.from < from || node.to <= node.from) return;
+        const lineNumber = state.doc.lineAt(node.from).number;
+        if (node.name === "TaskMarker") {
+          const marker = state.doc.sliceString(node.from, node.to);
+          decorations.push(
+            Decoration.replace({
+              widget: new TaskCheckboxWidget(
+                node.from,
+                node.to,
+                /x/i.test(marker),
+              ),
+            }).range(node.from, node.to),
+          );
+          return;
+        }
+        if (node.name === "Image" && !cursorLines.has(lineNumber)) {
+          const image = parseMarkdownImage(
+            state.doc.sliceString(node.from, node.to),
+          );
+          if (image) {
+            decorations.push(
+              Decoration.replace({
+                widget: new ImagePreviewWidget(image),
+              }).range(node.from, node.to),
+            );
+            return false;
+          }
+        }
         // 链接里的 URL 也隐藏(只留链接文本,Obsidian 式);但仅限 [文本](url) 形式,
         // 不碰正文里的裸链接(parent 非 Link)。其余按 CONCEAL_NODES 判定。
         const conceal =
@@ -147,7 +270,7 @@ export function buildConcealDecorations(
             : CONCEAL_NODES.has(node.name);
         if (!conceal) return;
         // 光标所在行显示原始标记,便于编辑(Live Preview 核心交互)。
-        if (cursorLines.has(state.doc.lineAt(node.from).number)) return;
+        if (cursorLines.has(lineNumber)) return;
         decorations.push(CONCEAL.range(node.from, node.to));
       },
     });

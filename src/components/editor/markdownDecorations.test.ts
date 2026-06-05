@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildConcealDecorations,
   buildMarkdownDecorations,
+  parseMarkdownImage,
   selectionLines,
 } from "./markdownDecorations";
 
@@ -75,6 +76,26 @@ function concealCount(doc: string, cursorLines: number[]): number {
   return count;
 }
 
+function widgetCount(doc: string, cursorLines: number[]): number {
+  const state = EditorState.create({
+    doc,
+    extensions: [markdown({ base: markdownLanguage })],
+  });
+  ensureSyntaxTree(state, doc.length, 5000);
+  const set = buildConcealDecorations(
+    state,
+    [{ from: 0, to: doc.length }],
+    new Set(cursorLines),
+  );
+  let count = 0;
+  const cursor = set.iter();
+  while (cursor.value) {
+    if ((cursor.value.spec as { widget?: unknown }).widget) count += 1;
+    cursor.next();
+  }
+  return count;
+}
+
 describe("buildConcealDecorations", () => {
   it("非光标行隐藏语法标记(**bold** 的 ** 被隐藏)", () => {
     expect(concealCount("**bold**", [])).toBeGreaterThan(0);
@@ -122,6 +143,30 @@ describe("buildConcealDecorations", () => {
     }
     // 两个 EmphasisMark(**),不应因跨段被重复推成 4 条。
     expect(count).toBe(2);
+  });
+
+  it("任务列表标记渲染为可点击复选框 widget", () => {
+    expect(widgetCount("- [ ] todo", [])).toBe(1);
+    expect(widgetCount("- [x] done", [])).toBe(1);
+  });
+
+  it("非光标行图片语法渲染为图片 widget,光标行保留源码", () => {
+    const doc = "![alt](https://example.com/a.png)";
+    expect(widgetCount(doc, [])).toBe(1);
+    expect(widgetCount(doc, [1])).toBe(0);
+  });
+});
+
+describe("parseMarkdownImage", () => {
+  it("解析 Markdown 图片 alt 与 URL", () => {
+    expect(parseMarkdownImage("![alt](https://example.com/a.png)")).toEqual({
+      alt: "alt",
+      url: "https://example.com/a.png",
+    });
+  });
+
+  it("非图片语法返回 null", () => {
+    expect(parseMarkdownImage("[text](https://example.com)")).toBeNull();
   });
 });
 

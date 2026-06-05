@@ -227,6 +227,49 @@ body {
   color: var(--color-muted);
   font-style: italic;
 }
+.cm-md-task-checkbox {
+  width: 1em;
+  height: 1em;
+  margin: 0 0.35em 0 0;
+  vertical-align: -0.12em;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+.cm-md-image-card {
+  display: inline-flex;
+  max-width: min(460px, 100%);
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.35rem 0;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  vertical-align: top;
+}
+.cm-md-image {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+.cm-md-image-placeholder {
+  display: inline-flex;
+  min-width: 160px;
+  min-height: 90px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--color-overlay);
+  color: var(--color-muted);
+}
+.cm-md-image-caption {
+  overflow: hidden;
+  color: var(--color-subtle);
+  font-size: 0.85em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* LSP 悬停提示:克制的代码风格卡片 */
 .cm-lsp-hover {

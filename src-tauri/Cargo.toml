@@ -1,6 +1,6 @@
 [package]
 name = "glyph"
-version = "0.0.13"
+version = "0.0.14"
 description = "The fast, light, beautiful code editor any AI agent can plug into."
 authors = []
 edition = "2021"

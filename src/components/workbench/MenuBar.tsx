@@ -31,6 +31,9 @@ interface MenuBarProps {
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
   onToggleSplit: () => void;
+  canToggleMarkdownSource: boolean;
+  markdownSourceVisible: boolean;
+  onToggleMarkdownSource: () => void;
   onToggleOutline: () => void;
   onCommandPalette: () => void;
   onOpenSettings: () => void;
@@ -76,6 +79,9 @@ export function MenuBar(props: MenuBarProps) {
     sidebarVisible,
     onToggleSidebar,
     onToggleSplit,
+    canToggleMarkdownSource,
+    markdownSourceVisible,
+    onToggleMarkdownSource,
     onToggleOutline,
     onCommandPalette,
     onOpenSettings,
@@ -286,6 +292,16 @@ export function MenuBar(props: MenuBarProps) {
             <Menubar.Item className={itemClass} onSelect={onToggleSplit}>
               {t("view.split")}
               <span className={shortcutClass}>Ctrl/⌘ \</span>
+            </Menubar.Item>
+            <Menubar.Item
+              className={itemClass}
+              disabled={!canToggleMarkdownSource}
+              onSelect={onToggleMarkdownSource}
+            >
+              {markdownSourceVisible
+                ? t("view.hideMarkdownSource")
+                : t("view.showMarkdownSource")}
+              <span className={shortcutClass}>Ctrl/⌘ ⇧ V</span>
             </Menubar.Item>
             <Menubar.Item className={itemClass} onSelect={onToggleOutline}>
               {t("outline.title")}
