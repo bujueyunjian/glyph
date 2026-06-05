@@ -30,4 +30,18 @@ describe("renderMarkdown", () => {
     const html = renderMarkdown("[x](javascript:alert(1))");
     expect(html).not.toMatch(/href="javascript:/i);
   });
+
+  it("mermaid 围栏 → 惰性占位符(不在此渲染 SVG,源码转义保留)", () => {
+    const html = renderMarkdown("```mermaid\nflowchart TD\n A-->B\n```");
+    expect(html).toContain('class="mermaid-block"');
+    expect(html).toContain("data-mermaid-hash=");
+    expect(html).toContain("flowchart TD");
+    expect(html).not.toContain("<svg"); // 渲染推迟到预览 effect,这里不出 SVG
+  });
+
+  it("非 mermaid 代码块仍走默认渲染", () => {
+    const html = renderMarkdown("```js\nconst a = 1;\n```");
+    expect(html).toContain("<code");
+    expect(html).not.toContain("mermaid-block");
+  });
 });

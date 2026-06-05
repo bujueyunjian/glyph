@@ -172,7 +172,7 @@ fn kill(child: &mut Child) {
 }
 
 // 按用户配置的命令启动 ACP agent 子进程(stdio 全管道)。命令按空白拆 program + args,
-// 故 "claude-agent-acp" 与 "npx -y @zed-industries/claude-code-acp" 都支持。
+// 故 "claude-code-acp" 与 "npx -y @zed-industries/claude-code-acp" 都支持。
 // 命令不存在(ENOENT)时给可执行的指引:Glyph 不内置 agent,需自备适配器。
 fn spawn_agent(agent_cmd: &str) -> Result<Child, String> {
     let mut parts = agent_cmd.split_whitespace();
@@ -195,7 +195,7 @@ fn spawn_agent(agent_cmd: &str) -> Result<Child, String> {
         if e.kind() == std::io::ErrorKind::NotFound {
             format!(
                 "未找到 agent 命令「{program}」。Glyph 不内置 AI agent,需自备 ACP 适配器:\
-                 例如 npm i -g @zed-industries/claude-code-acp(它提供 claude-agent-acp 命令),\
+                 例如 npm i -g @zed-industries/claude-code-acp(它提供 claude-code-acp 命令),\
                  装好后在 AI 面板填入该命令。"
             )
         } else {
@@ -204,7 +204,7 @@ fn spawn_agent(agent_cmd: &str) -> Result<Child, String> {
     })
 }
 
-// 一次性向 ACP agent 发 prompt 取完整文本响应。agent_cmd 如 "claude-agent-acp"(用户已装的适配器)。
+// 一次性向 ACP agent 发 prompt 取完整文本响应。agent_cmd 如 "claude-code-acp"(用户已装的适配器)。
 #[tauri::command]
 pub fn agent_oneshot(
     agent_cmd: String,

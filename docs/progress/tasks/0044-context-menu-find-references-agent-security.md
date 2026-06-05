@@ -56,8 +56,9 @@
 3. **状态栏瘦身 + 命令归位**:StatusBar 删掉 搜索/分屏/命令 三个按钮,只剩文件/语言/LSP/版本(纯状态);
    命令面板 + 切换分屏 进**视图**菜单,跨文件搜索 进**编辑**菜单——可发现性不降,且符合右键/菜单栏约定。
 4. **Agent 报错**:`spawn_agent()` 统一两处 spawn;`ErrorKind::NotFound` 给可执行指引(Glyph 不内置 agent,
-   `npm i -g @zed-industries/claude-code-acp` 提供 `claude-agent-acp` 命令)而非裸 OS 错误码。
-   (经核实:该包的 bin 正是 `claude-agent-acp`,故默认命令本就正确,问题是用户未安装。)
+   `npm i -g @zed-industries/claude-code-acp` 提供 `claude-code-acp` 命令)而非裸 OS 错误码。
+   (⚠️ 当时据 GitHub HEAD 的 package.json 误判 bin 为 `claude-agent-acp` 并设为默认;后经真机 + npm registry 核实,
+   **发布版 0.14–0.16 的 bin 实为 `claude-code-acp`**,默认在任务 0050 已改正。教训:核 bin 名要查 npm registry 已发布版本,别信 GitHub HEAD。)
 5. **Agent 数据安全**(ADR-0009):
    - **能力否决是安全边界**:`client_init_params` 的 `fs/terminal` 恒 false;agent→client 请求由
      `deny_reply()` 一律回错误。新增 2 个 Rust 回归测试守卫(翻 true 或静默放行即失败)。

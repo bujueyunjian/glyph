@@ -36,7 +36,7 @@ Glyph 瞄准这块正中间的空白。
 - **右键上下文菜单** —— 剪切/复制/粘贴、查找/替换，以及（连上语言服务器时）转到定义、查找引用、重命名、格式化。
 - **LSP** —— 补全 · 诊断 · 悬停 · 转到定义 · 查找引用 · 格式化 · 重命名 · 文档符号。协议实现在 Rust，对真实 `rust-analyzer` 端到端验证。**不打包**语言服务器（守轻）——接你自己的。
 - **写作级 Markdown** —— 渲染 + 分屏预览、Obsidian 式行内 Live Preview、格式化命令（粗/斜/标题/引用/列表）、任务列表。
-- **Agent 宿主** —— 接任意 ACP 适配器（如 `claude-agent-acp`），侧栏流式对话，并可配置 **MCP server**（转发给 agent）。**不绑模型、不绑 key。** 你的提问只转发给你选的 agent——首次运行知情同意、严格的「不碰文件系统/终端」能力边界、工作区级作用域。Glyph 自身不存储不上传（[ADR-0009](docs/adr/0009-agent-data-security.md) · [ADR-0010](docs/adr/0010-mcp-via-acp-forwarding.md)）。
+- **Agent 宿主** —— 接任意 ACP 适配器（如 `claude-code-acp`），侧栏流式对话，并可配置 **MCP server**（转发给 agent）。**不绑模型、不绑 key。** 你的提问只转发给你选的 agent——首次运行知情同意、严格的「不碰文件系统/终端」能力边界、工作区级作用域。Glyph 自身不存储不上传（[ADR-0009](docs/adr/0009-agent-data-security.md) · [ADR-0010](docs/adr/0010-mcp-via-acp-forwarding.md)）。
 
 ## 安装
 
@@ -50,7 +50,7 @@ Glyph 瞄准这块正中间的空白。
 
 > 安装包尚未签名/公证，首次启动系统可能告警（Gatekeeper / SmartScreen）。签名在路线图上。
 
-要用 AI 功能，先装一个 ACP 适配器，如 `npm i -g @zed-industries/claude-code-acp`（它提供 `claude-agent-acp` 命令）。Glyph 不内置模型/密钥。
+要用 AI 功能，先装一个 ACP 适配器，如 `npm i -g @zed-industries/claude-code-acp`（它提供 `claude-code-acp` 命令）。Glyph 不内置模型/密钥。
 
 ## 技术栈
 

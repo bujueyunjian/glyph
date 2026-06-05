@@ -113,7 +113,7 @@
     "failed": "agent 调用失败: {{msg}}",
     "resultTitle": "Agent 响应",
     "panelTitle": "AI Agent",
-    "panelHint": "在下方输入提问。Glyph 不内置模型/密钥,只把提问本地转发给你已装的 ACP 适配器(如 claude-agent-acp;安装:npm i -g @zed-industries/claude-code-acp)。",
+    "panelHint": "在下方输入提问。Glyph 不内置模型/密钥,只把提问本地转发给你已装的 ACP 适配器(如 claude-code-acp;安装:npm i -g @zed-industries/claude-code-acp)。",
     "consentTitle": "允许运行 AI agent?",
     "consentBody": "运行后,你的提问及 agent 读取的项目内容会发送给你配置的 agent 及其模型提供方。Glyph 仅在本地转发,不存储、不上传你的数据。仅在信任该 agent 时继续。",
     "mcpLabel": "MCP 服务器({{n}})",
@@ -155,6 +155,7 @@
     "unknownVersion": "无法获取当前版本(非 Tauri 环境?)"
   },
   "file": {
+    "new": "新建文件",
     "open": "打开",
     "openFolder": "打开文件夹",
     "recent": "最近打开",

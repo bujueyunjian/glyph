@@ -2,7 +2,7 @@ import { call } from "./ipc";
 import type { McpServer } from "@/features/agent/mcpConfig";
 
 // ACP agent 调用封装。对应 Rust agent.rs。
-// agentCmd 为用户已装的 ACP 适配器命令(如 "claude-agent-acp")。
+// agentCmd 为用户已装的 ACP 适配器命令(如 "claude-code-acp")。
 // mcpServers 转发给 agent,由 agent 连接对应 MCP server(见 ADR-0010)。
 
 export function agentOneshot(

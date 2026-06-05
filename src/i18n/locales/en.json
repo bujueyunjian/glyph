@@ -113,7 +113,7 @@
     "failed": "Agent call failed: {{msg}}",
     "resultTitle": "Agent response",
     "panelTitle": "AI Agent",
-    "panelHint": "Type a prompt below. Glyph bundles no model/key — it just forwards your prompt locally to your installed ACP adapter (e.g. claude-agent-acp; install: npm i -g @zed-industries/claude-code-acp).",
+    "panelHint": "Type a prompt below. Glyph bundles no model/key — it just forwards your prompt locally to your installed ACP adapter (e.g. claude-code-acp; install: npm i -g @zed-industries/claude-code-acp).",
     "consentTitle": "Run AI agent?",
     "consentBody": "Your prompt and any project content the agent reads will be sent to your configured agent and its model provider. Glyph only forwards locally — it never stores or uploads your data. Continue only if you trust this agent.",
     "mcpLabel": "MCP servers ({{n}})",
@@ -155,6 +155,7 @@
     "unknownVersion": "Cannot determine current version (not in Tauri?)"
   },
   "file": {
+    "new": "New File",
     "open": "Open",
     "openFolder": "Open Folder",
     "recent": "Open Recent",

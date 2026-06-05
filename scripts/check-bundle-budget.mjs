@@ -39,4 +39,20 @@ if (kb > BUDGET_GZIP_KB) {
   );
   process.exit(1);
 }
+
+// 重依赖硬门禁:mermaid(~MB 级)必须只在按需 async chunk,绝不出现在首屏 entry chunk。
+// 一旦有人误把它静态 import 进首屏路径,这里立刻失败。
+const HEAVY_FORBIDDEN = ["mermaid"];
+for (const ref of firstPaint) {
+  const code = readFileSync(join(DIST, ref), "utf8");
+  for (const needle of HEAVY_FORBIDDEN) {
+    if (code.includes(needle)) {
+      console.error(
+        `❌ 首屏 chunk ${ref} 含「${needle}」—— 重依赖被静态拉进首屏(性能红线)。必须改为动态 import()。`,
+      );
+      process.exit(1);
+    }
+  }
+}
+
 console.log("✅ 首屏体积在预算内");

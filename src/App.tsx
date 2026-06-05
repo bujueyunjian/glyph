@@ -41,7 +41,7 @@ import { MenuBar } from "@/components/workbench/MenuBar";
 import { StatusBar } from "@/components/workbench/StatusBar";
 import { TabBar } from "@/components/workbench/TabBar";
 import { WorkbenchLayout } from "@/components/workbench/WorkbenchLayout";
-import { useEditorTabs } from "@/hooks/useEditorTabs";
+import { useEditorTabs, isUntitled } from "@/hooks/useEditorTabs";
 import { useRecentFiles } from "@/hooks/useRecentFiles";
 import { useRecentFolders } from "@/hooks/useRecentFolders";
 import { useSession } from "@/hooks/useSession";
@@ -155,6 +155,7 @@ function App() {
     activePath,
     open,
     openPath,
+    newUntitled,
     setActive,
     closeTab,
     closeOthers,
@@ -187,13 +188,20 @@ function App() {
   const [outlineSyms, setOutlineSyms] = useState<OutlineSymbol[]>([]);
   const [outlineLoading, setOutlineLoading] = useState(false);
   const [treeVersion, setTreeVersion] = useState(0);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  // Markdown 预览默认开(只对 .md 文件渲染),持久化:打开 md 即见渲染图,不必每次手动开预览。
+  const [previewOpen, setPreviewOpen] = useState(() => {
+    try {
+      return localStorage.getItem("glyph.mdPreviewOpen") !== "0";
+    } catch {
+      return true;
+    }
+  });
   const [previewContent, setPreviewContent] = useState("");
   const previewTimerRef = useRef<number | undefined>(undefined);
   const [agentResult, setAgentResult] = useState<string | null>(null);
   const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
-  const [agentCmd, setAgentCmd] = useState("claude-agent-acp");
+  const [agentCmd, setAgentCmd] = useState("claude-code-acp");
   // MCP server 配置(JSON 文本,持久化)。转发给 agent 由其连接(ADR-0010)。
   const [mcpServersText, setMcpServersText] = useState(() => {
     try {
@@ -332,9 +340,6 @@ function App() {
     };
   }, [lspStatus.serverId, effectiveActive]);
 
-  const doSave = useCallback(() => {
-    if (effectiveActive) void save(effectiveActive);
-  }, [effectiveActive, save]);
   const doSaveAs = useCallback(() => {
     if (!effectiveActive) return;
     const old = effectiveActive;
@@ -347,6 +352,17 @@ function App() {
       if (pane) lastEditedPaneRef.current.set(picked, pane);
     });
   }, [effectiveActive, saveAs]);
+  const doSave = useCallback(() => {
+    if (!effectiveActive) return;
+    // 无标题缓冲无真实路径,保存即另存为(否则会写出名为 "Untitled-N" 的文件)。
+    if (isUntitled(effectiveActive)) doSaveAs();
+    else void save(effectiveActive);
+  }, [effectiveActive, save, doSaveAs]);
+  // 新建无标题文件(置于主面板并聚焦),供文件菜单与 Ctrl/⌘+N。
+  const doNewFile = useCallback(() => {
+    setFocusedPane("main");
+    newUntitled();
+  }, [setFocusedPane, newUntitled]);
 
   // 打开文件到聚焦面板:分屏聚焦则开进分屏(不动主面板激活),否则开进主面板。
   const openInFocused = useCallback(
@@ -823,10 +839,27 @@ function App() {
     !!effectiveActive &&
     ["json", "jsonc"].includes(getFileExtension(effectiveActive));
 
-  // 预览开启或切换文件时,立即用当前文档内容刷新预览。
+  // 预览开启或切换文件时,立即刷新预览。编辑器实例尚未挂载(懒加载)时回退到标签 initialContent,
+  // 避免「自动预览」在文件刚打开、CM 未就绪时闪空。
   useEffect(() => {
-    if (previewOpen && activePath) setPreviewContent(getContent(activePath));
-  }, [previewOpen, activePath, getContent]);
+    if (!previewOpen || !activePath) return;
+    const view =
+      editorRefs.current.get(activePath)?.view ??
+      splitRefs.current.get(activePath)?.view;
+    const tab = tabs.find((tb) => tb.path === activePath);
+    setPreviewContent(
+      view ? getContent(activePath) : (tab?.initialContent ?? ""),
+    );
+  }, [previewOpen, activePath, getContent, tabs]);
+
+  // 持久化预览开关:用户的开/关偏好跨会话保留(默认开)。
+  useEffect(() => {
+    try {
+      localStorage.setItem("glyph.mdPreviewOpen", previewOpen ? "1" : "0");
+    } catch {
+      // 持久化失败不致命
+    }
+  }, [previewOpen]);
 
   // 文件树增删改:弹输入/确认 → 调命令 → 刷新(treeVersion 变更使 FileTree 重挂载重列)。
   const treeActions = useMemo<FileTreeActions>(
@@ -890,6 +923,13 @@ function App() {
   // 命令面板的命令集:按当前能力构建(文件操作 + 每个主题一条切换)。
   const commands = useMemo<CommandAction[]>(
     () => [
+      {
+        id: "file.new",
+        title: t("file.new"),
+        group: t("menu.file"),
+        shortcut: "Ctrl/⌘ N",
+        perform: doNewFile,
+      },
       {
         id: "file.open",
         title: t("file.open"),
@@ -1226,6 +1266,7 @@ function App() {
     [
       t,
       open,
+      doNewFile,
       openFolder,
       doSave,
       doSaveAs,
@@ -1297,6 +1338,9 @@ function App() {
       } else if (event.shiftKey && key === "o") {
         event.preventDefault();
         setOutlineOpen((prev) => !prev);
+      } else if (key === "n") {
+        event.preventDefault();
+        doNewFile();
       } else if (key === "o") {
         event.preventDefault();
         void open();
@@ -1331,6 +1375,7 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     open,
+    doNewFile,
     doSave,
     doSaveAs,
     saveAll,
@@ -1388,9 +1433,10 @@ function App() {
         splitRefs.current.get(splitPath)?.view?.state.selection.main.head;
       if (splitHead != null) cursors[splitPath] = splitHead;
     }
+    // 无标题缓冲无磁盘文件,不进会话(否则重启 openPath 读盘必失败)。
     saveSession(
-      tabs.map((tab) => tab.path),
-      activePath,
+      tabs.map((tab) => tab.path).filter((path) => !isUntitled(path)),
+      activePath && !isUntitled(activePath) ? activePath : null,
       cursors,
       rootPath,
     );
@@ -1502,6 +1548,7 @@ function App() {
         }
         menu={
           <MenuBar
+            onNewFile={doNewFile}
             onOpen={open}
             onOpenFolder={openFolder}
             recentFiles={recent}
@@ -1639,7 +1686,10 @@ function App() {
             {previewOpen && activeIsMarkdown ? (
               <div className="min-w-0 flex-1 border-l border-[var(--color-border)]">
                 <Suspense fallback={<div className="h-full w-full" />}>
-                  <MarkdownPreview content={previewContent} />
+                  <MarkdownPreview
+                    content={previewContent}
+                    themeKind={activeTheme.kind}
+                  />
                 </Suspense>
               </div>
             ) : null}

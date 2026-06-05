@@ -36,7 +36,7 @@ Glyph aims for the empty center.
 - **Right-click context menu** — cut/copy/paste, find/replace, and — when a language server is connected — go to definition, find references, rename, format.
 - **LSP** — completion · diagnostics · hover · go to definition · find references · format · rename · document symbols. The protocol lives in Rust and is verified end-to-end against a real `rust-analyzer`. Language servers are **not** bundled (staying light) — point Glyph at your own.
 - **Writing-grade Markdown** — render + split preview, Obsidian-style inline Live Preview, format commands (bold/italic/headings/quote/lists), task lists.
-- **Agent host** — connect any ACP adapter (e.g. `claude-agent-acp`), stream a conversation in a side panel, and configure **MCP servers** that are forwarded to the agent. **No bundled model, no key lock-in.** Your prompts are forwarded to *your* chosen agent only — with first-run informed consent, a strict no-fs/no-terminal capability boundary, and workspace-scoped working directory. Glyph stores and uploads nothing itself ([ADR-0009](docs/adr/0009-agent-data-security.md) · [ADR-0010](docs/adr/0010-mcp-via-acp-forwarding.md)).
+- **Agent host** — connect any ACP adapter (e.g. `claude-code-acp`), stream a conversation in a side panel, and configure **MCP servers** that are forwarded to the agent. **No bundled model, no key lock-in.** Your prompts are forwarded to *your* chosen agent only — with first-run informed consent, a strict no-fs/no-terminal capability boundary, and workspace-scoped working directory. Glyph stores and uploads nothing itself ([ADR-0009](docs/adr/0009-agent-data-security.md) · [ADR-0010](docs/adr/0010-mcp-via-acp-forwarding.md)).
 
 ## Install
 
@@ -50,7 +50,7 @@ Download the build for your OS from [the latest release](https://github.com/buju
 
 > Builds aren't code-signed/notarized yet, so your OS may warn on first launch (Gatekeeper / SmartScreen). Signing is on the roadmap.
 
-To use AI features, install an ACP adapter, e.g. `npm i -g @zed-industries/claude-code-acp` (provides the `claude-agent-acp` command). Glyph bundles no model or key.
+To use AI features, install an ACP adapter, e.g. `npm i -g @zed-industries/claude-code-acp` (provides the `claude-code-acp` command). Glyph bundles no model or key.
 
 ## Tech stack
 

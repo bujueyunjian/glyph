@@ -36,3 +36,11 @@
 - ⚠️ 安全：不可信 MD 必须消毒（DOMPurify，锁版本）+ CSP，绝不裸传 raw HTML。
 - ⚠️ CM6 行内 decoration 管理琐碎 → **不追 Typora 全等价**；高亮器与预览器 GFM flag 对齐，大文档 debounce。
 - 渲染库倾向：Rust 侧 comrak（合规/默认消毒）或 pulldown-cmark（快/轻），待实现期定。
+
+## Addendum 2026-06-05：Mermaid 图渲染（任务 0050）
+
+原计划「Mermaid 留插件」。用户反馈预览里的 flowchart 等图无法显示，遂在第一方预览中落地 mermaid，守住两条红线：
+
+- **footprint**：mermaid（~MB 级）**只在文档确含 ```mermaid 块时**经 `import("mermaid")` 动态加载——既不进首屏，也不进基础预览 chunk（`features/markdown/mermaid.ts` 是唯一 import 处）。首屏体积门禁新增「entry chunk 不得含 mermaid」硬断言。
+- **安全（本 ADR 安全红线的延伸）**：打开的 .md 是**不可信输入**。`securityLevel:'strict'` + **顶层 `htmlLabels:false`**（实测：仅设 `flowchart.htmlLabels` 无效，标签仍走 `<foreignObject>` HTML → 被 SVG 消毒剥空）+ 对 mermaid 输出 SVG **再过一遍 DOMPurify（SVG profile）** 做防御纵深（strict 历史上仍出过可执行输出，Tauri 端 XSS 可升级 RCE）。渲染失败响亮（内联错误占位），绝不静默吞或白屏。
+- 主题跟随 app（dark/light），按需 effect + 哈希 SVG 缓存避免编辑时反复重渲染。

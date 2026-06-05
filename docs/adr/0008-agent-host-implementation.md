@@ -8,7 +8,7 @@
 ADR-0004 锁定 Glyph 做 **ACP 本地宿主 + MCP 客户端**。M4 落地前，联网核实 2026-06 的协议与生态现状，确定用官方库还是自研。
 
 ### 联网核实的事实（2026-06）
-- **ACP** = JSON-RPC 2.0 over **stdio**，agent 作编辑器子进程；稳定版 **v1**。Zed（2025-08 引入）、JetBrains、Google 直接实现；**Claude Code / Codex 经适配器接入**（如 `claude-agent-acp`，Apache 许可，包装 Claude Agent SDK → ACP JSON-RPC）。2026-01 Zed + JetBrains 合推 **ACP Agent Registry**。**VS Code 仍无原生 ACP**（仅社区扩展）——印证 ADR-0004「可占缺口」。**HTTP/远程传输尚是提案** → v1 仅本地 stdio（与 ADR-0004 一致）。
+- **ACP** = JSON-RPC 2.0 over **stdio**，agent 作编辑器子进程；稳定版 **v1**。Zed（2025-08 引入）、JetBrains、Google 直接实现；**Claude Code / Codex 经适配器接入**（如 `claude-code-acp`，Apache 许可，包装 Claude Agent SDK → ACP JSON-RPC）。2026-01 Zed + JetBrains 合推 **ACP Agent Registry**。**VS Code 仍无原生 ACP**（仅社区扩展）——印证 ADR-0004「可占缺口」。**HTTP/远程传输尚是提案** → v1 仅本地 stdio（与 ADR-0004 一致）。
 - **官方 Rust crate**：`agent-client-protocol`（+ `agent-client-protocol-schema`）在 crates.io，提供协议类型 + client builder（transport + init 握手）。
 - **MCP 官方 Rust SDK**：`rmcp`（modelcontextprotocol/rust-sdk，tokio 异步，client + server，多传输）。
 

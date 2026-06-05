@@ -19,7 +19,7 @@
 ## 验证
 - ✅ `cargo clippy -D warnings` 干净；`cargo test` 8 通过。
 - ✅ `pnpm check` 全绿；build + budget 首屏 **133.0KB / 170KB**。
-- ⏳ 端到端（真 agent 逐块流式 + 出错路径）需本地装 `claude-agent-acp` 等 ACP 适配器 + 运行 app 自验。
+- ⏳ 端到端（真 agent 逐块流式 + 出错路径）需本地装 `claude-code-acp` 等 ACP 适配器 + 运行 app 自验。
 
 ## 已知限制（v1）
 - 每次提问是**独立一次性会话**（spawn→prompt→收完即 kill），无跨轮对话记忆 / 无会话保活。

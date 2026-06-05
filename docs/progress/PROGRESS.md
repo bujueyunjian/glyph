@@ -78,6 +78,7 @@
 - ✅ [0046] **Agent 作用域收敛**(ADR-0009 后续):agent cwd 钉到打开的工作区根(`resolve_cwd`,缺省回退进程目录)+ 回归测试,不再默认暴露打包 app 的启动目录(可能 `/`)
 - ✅ [0047] **Markdown 标题大纲**(支柱②):大纲面板对 Markdown 走纯前端 `markdownHeadings`(跳过围栏代码块)解析标题,**无需 LSP** 即可用 + 3 单测;`canResolve` 区分 MD/LSP 空态
 - ✅ [0048] **Markdown 任务列表**(支柱②):`toggleTaskList`(`- [ ] ` 切换,含已勾选去除)+ 2 单测,命令面板 mdfmt 组
+- ✅ [0050] **新建文件**(`Ctrl/⌘+N` 无标题缓冲)· **Markdown 预览顺手化**(对 .md 默认开渲染预览 + 持久化)· **Mermaid 图渲染**(```mermaid→图,按需动态载入不进首屏,strict+SVG 二次消毒,[ADR-0002 Addendum](../adr/0002-markdown-live-preview.md))· **修正 agent 默认命令为 `claude-code-acp`**(真机+registry 核实,纠正误信 GitHub HEAD)
 - ✅ [ADR-0010 + 0049] **MCP 客户端(护城河③)**:走 ACP 转发,**零新依赖、守轻**(部分取代 0008 的 rmcp)。`session_new_params` 把用户配置的 MCP server 转发进 `session/new` 由 agent 连接(Rust 单测);AgentPanel 内 JSON 配置区(`parseMcpServers` 解析 + 3 单测,坏配置响亮报错/拒发,localStorage 持久化);Playwright 验空/错/有三态。差异化三角③ 至此:流式对话 + 安全边界 + cwd 收敛 + **MCP**
 - ✅ 发布 v0.0.2 → **v0.0.11**(逐版 4 平台 CI 绿;后续改批量发版)
 

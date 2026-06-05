@@ -17,6 +17,12 @@ export interface EditorTab {
   isDirty: boolean;
 }
 
+// 无标题缓冲的合成路径形如 "Untitled-1"(无斜杠,与绝对路径天然区分)。保存时走另存为落到真实路径。
+const UNTITLED_RE = /^Untitled-\d+$/;
+export function isUntitled(path: string): boolean {
+  return UNTITLED_RE.test(path);
+}
+
 // 多标签编辑状态。文档内容不在 React state,由各标签的 CodeMirror 实例持有;
 // 保存时通过 getContent(path)(上层注入,读对应 editor ref)取内容。
 // 用 ref 同步 tabs/activePath,使所有回调保持稳定(便于挂到全局快捷键)。
@@ -29,6 +35,7 @@ export function useEditorTabs(
   const [activePath, setActivePath] = useState<string | null>(null);
   const tabsRef = useRef<EditorTab[]>([]);
   const activePathRef = useRef<string | null>(null);
+  const untitledCounter = useRef(0);
 
   const writeTabs = useCallback((next: EditorTab[]) => {
     tabsRef.current = next;
@@ -71,6 +78,17 @@ export function useEditorTabs(
     if (typeof selected !== "string") return; // 用户取消
     await openPath(selected);
   }, [openPath]);
+
+  // 新建无标题缓冲(VS Code 式 Ctrl/⌘+N):空内容、合成路径,首次保存走另存为落盘。
+  const newUntitled = useCallback(() => {
+    untitledCounter.current += 1;
+    const path = `Untitled-${untitledCounter.current}`;
+    writeTabs([
+      ...tabsRef.current,
+      { path, initialContent: "", isDirty: false },
+    ]);
+    activate(path);
+  }, [writeTabs, activate]);
 
   // 用户编辑只标脏;已脏则返回原引用让 React bail-out,不每键 churn。
   const markDirty = useCallback(
@@ -237,6 +255,7 @@ export function useEditorTabs(
     activePath,
     open,
     openPath,
+    newUntitled,
     setActive,
     closeTab,
     closeOthers,

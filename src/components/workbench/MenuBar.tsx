@@ -8,6 +8,7 @@ import { getFileName } from "@/utils/path";
 
 interface MenuBarProps {
   // 文件
+  onNewFile: () => void;
   onOpen: () => void;
   onOpenFolder: () => void;
   recentFiles: string[];
@@ -54,6 +55,7 @@ const separatorClass = "my-1 h-px bg-[var(--color-border)]";
 export function MenuBar(props: MenuBarProps) {
   const { t } = useTranslation();
   const {
+    onNewFile,
     onOpen,
     onOpenFolder,
     recentFiles,
@@ -96,6 +98,10 @@ export function MenuBar(props: MenuBarProps) {
             align="start"
             sideOffset={4}
           >
+            <Menubar.Item className={itemClass} onSelect={onNewFile}>
+              {t("file.new")}
+              <span className={shortcutClass}>Ctrl/⌘ N</span>
+            </Menubar.Item>
             <Menubar.Item className={itemClass} onSelect={onOpen}>
               {t("file.open")}
               <span className={shortcutClass}>Ctrl/⌘ O</span>
