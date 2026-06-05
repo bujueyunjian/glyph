@@ -1,0 +1,76 @@
+src/i18n/locales/en.json
+  s_3a96c55a2fed99::t_3487f5240922e2 57-59
+  s_3a96c55a2fed99::t_dc0dccb9c7d5be 88-89
+  s_3a96c55a2fed99::t_5872dfa73d8cd9 120-123
+src/App.tsx
+  s_3a96c55a2fed99::t_3e918f9305ba97 899,901-903,1463,1519,1829-1831,1833-1834
+  s_3a96c55a2fed99::t_2e3e7760b115a0 1128-1134,1408
+  s_3a96c55a2fed99::t_85c51226ba88cd 1407,1699-1703
+  s_3a96c55a2fed99::t_93cef1aed75a4b 1762-1767,1816-1820,1828,1832
+  s_3a96c55a2fed99::t_c32776d515a49a 195,197,199,949,952-955,959
+  s_3a96c55a2fed99::t_10e3f05bffb566 1404
+  s_3a96c55a2fed99::t_da52c6be7a4e53 29,941-947,1135-1137,1768
+  s_3a96c55a2fed99::t_b9822979ae5ddc 194,202-210,900,911,923-929,931,933,960-971
+  s_3a96c55a2fed99::t_e5def1d4a53471 1117-1127
+  s_3a96c55a2fed99::t_3f0ee7c908c242 30-32,213,239-240,244,247,249-257,286-287,289,291-301,314,316-322,341-352,357,359,361-369,374,376,378-383,1851
+src/i18n/locales/zh-CN.json
+  s_3a96c55a2fed99::t_5872dfa73d8cd9 120-123
+  s_3a96c55a2fed99::t_3487f5240922e2 57-59
+  s_3a96c55a2fed99::t_dc0dccb9c7d5be 88-89
+docs/progress/tasks/0051-agent-panel-transcript-windows-shim.md
+  s_3a96c55a2fed99::t_e9b1a960df7444 1-29,34-47,49-54
+  s_3a96c55a2fed99::t_5b0ba46cde1a6f 30-33,48
+docs/progress/tasks/0053-markdown-live-preview-widgets.md
+  s_3a96c55a2fed99::t_c1cc14264580d7 1-36,40-56,58-67
+  s_3a96c55a2fed99::t_087295d7af0449 57
+  s_3a96c55a2fed99::t_ba01a4849646ef 37-39
+package.json
+  s_3a96c55a2fed99::t_72fa9aff5ddde4 4
+docs/progress/tasks/0052-markdown-render-first-source-toggle.md
+  s_3a96c55a2fed99::t_ff3e8e1ad43b7c 2-13,15-16,18-20,22-23,25-34,37-42,44-48,50-51
+  s_3a96c55a2fed99::t_60553bd8ad75e8 1,14,17,21,24,35-36,43,49,52
+src/components/editor/markdownDecorations.test.ts
+  s_3a96c55a2fed99::t_b0641b9a5df655 9,79-98,147-169
+docs/progress/PROGRESS.md
+  s_3a96c55a2fed99::t_e9b1a960df7444 82
+  s_3a96c55a2fed99::t_60553bd8ad75e8 83
+  s_3a96c55a2fed99::t_c1cc14264580d7 84
+  s_3a96c55a2fed99::t_621c4afe05e737 6
+src/styles.css
+  s_3a96c55a2fed99::t_9b831302bf0fd7 230-271
+src/components/editor/markdownDecorations.ts
+  s_3a96c55a2fed99::t_72fa9aff5ddde4 118-122
+  s_3a96c55a2fed99::t_da52c6be7a4e53 130-132,173-175,202,243-247,253-255,258-260
+  s_3a96c55a2fed99::t_433a23e00d547b 8,108-117,123-129,133-172,176-199,238-242,248-252,256-257,261-264,273
+src/components/command/AgentPanel.tsx
+  s_3a96c55a2fed99::t_1ea585b4a7762e 1,5-11,22-23,39,46,55-60,112-113,118-131,135-155
+  s_3a96c55a2fed99::t_da52c6be7a4e53 132-134
+src/components/editor/CodeEditor.tsx
+  s_3a96c55a2fed99::t_f14e7f7dda95f6 53-55,77-90,114-117
+  s_3a96c55a2fed99::t_da52c6be7a4e53 122
+src-tauri/Cargo.toml
+  s_3a96c55a2fed99::t_72fa9aff5ddde4 3
+src-tauri/tauri.conf.json
+  s_3a96c55a2fed99::t_72fa9aff5ddde4 4
+src/components/workbench/MenuBar.tsx
+  s_3a96c55a2fed99::t_85c51226ba88cd 34-36,82-84,296-304
+src-tauri/src/agent.rs
+  s_3a96c55a2fed99::t_d01108b7717444 174-196,208-221,223-229
+  s_3a96c55a2fed99::t_352808c6ee8de5 441,468-484
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "dcb01f37ff9e619f53e0494fa20e4525dedde9e1",
+  "prompts": {},
+  "sessions": {
+    "s_3a96c55a2fed99": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9662-2ee1-78c3-b6fd-330157a04157",
+        "model": "gpt-5.5"
+      },
+      "human_author": "bujueyunjian <bbujueyunjian@gmail.com>"
+    }
+  }
+}
